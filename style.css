@@ -1,58 +1,25 @@
-/* ==========================
-   Общие настройки
-   ========================== */
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
-  background-color: #000;
-}
-
-/* ==========================
-   Игровое поле
-   ========================== */
 .grid {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  background-image: url('background.png');
-  background-size: cover;
-  background-position: center;
-  overflow: hidden;
-}
-
-/* ==========================
-   Doodler
-   ========================== */
-.doodler {
-  position: absolute;
-  background-image: url('doodler-guy.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-
-  /* ❗ размеры задаёт JS */
-  width: 0;
-  height: 0;
-}
-
-/* ==========================
-   Платформы
-   ========================== */
-.platform {
-  position: absolute;
-  background-image: url('platform.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-
-  /* ❗ размеры задаёт JS */
-  width: 0;
-  height: 0;
-}
+    width: 400px;
+    height: 600px;
+    background-image: url('background.png');
+    position: relative;
+    font-size: 100px;
+    text-align: center; 
+    
+  }
+  
+  .doodler {
+    width: 87px;
+    height: 85px;
+    background-image: url('doodler-guy.png');
+    position: absolute;
+    
+  }
+  
+  .platform {
+    width: 85px;
+    height: 15px;
+    background-image: url('platform.png');
+    position: absolute;
+    
+  }
