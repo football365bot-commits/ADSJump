@@ -1,30 +1,54 @@
+/* ==========================
+   Общие настройки для body/html
+   ========================== */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* убираем скролл */
+  overflow: hidden;               /* убираем скролл */
+  touch-action: none;             /* запрещает скролл/перетаскивание */
+  user-select: none;              /* запрещает выделение текста */
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -webkit-touch-callout: none;    /* отключает "лупу" на долгий тап */
+  -webkit-tap-highlight-color: transparent; /* убираем серое выделение при тапе */
+  background-color: #000;         /* чёрный фон, пока не загрузится background */
 }
 
+/* ==========================
+   Игровое поле
+   ========================== */
 .grid {
   width: 100%;
   height: 100%;
-  background-image: url('background.png');
-  background-size: cover; /* фон растягивается под весь экран */
-  background-position: center;
   position: relative;
+  background-image: url('background.png');
+  background-size: cover;        /* растягиваем фон под весь экран */
+  background-position: center;
+  overflow: hidden;
 }
 
+/* ==========================
+   Doodler
+   ========================== */
 .doodler {
-  width: 87px;
-  height: 85px;
-  background-image: url('doodler-guy.png');
   position: absolute;
+  background-image: url('doodler-guy.png');
+  background-size: contain;      /* изображение масштабируется */
+  background-repeat: no-repeat;
+  width: 10%;                    /* можно менять через JS для точного размера */
+  height: auto;
 }
 
+/* ==========================
+   Платформы
+   ========================== */
 .platform {
-  width: 85px;
-  height: 15px;
-  background-image: url('platform.png');
   position: absolute;
+  background-image: url('platform.png');
+  background-size: cover;        /* платформа растягивается под ширину */
+  background-repeat: no-repeat;
+  width: 20%;                    /* можно менять через JS */
+  height: 3%;                     /* высота платформы относительно экрана */
 }
