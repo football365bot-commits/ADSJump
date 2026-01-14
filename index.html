@@ -1,22 +1,24 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
-  <head>
-    <meta charset="utf-8">
-
-    <!-- ВАЖНО: viewport для Telegram -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-
-    <!-- Telegram Web App SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-    <!-- Твой основной JS -->
-    <script src="index.js" defer></script>
-
-    <link rel="stylesheet" href="style.css">
-    <title>Doodle Jump JS</title>
-  </head>
-
-  <body>
-    <div class="grid"></div>
-  </body>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Doodle Jump</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="game"></canvas>
+    <script src="game.js"></script>
+</body>
 </html>
