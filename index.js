@@ -1,183 +1,168 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const grid = document.querySelector('.grid');
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
 
-    // ===========================
-    // Переменные игры
-    // ===========================
-    const platforms = [];
-    const platformCount = 5;
-    const doodler = document.createElement('div');
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
 
-    let doodlerLeft = 0;
-    let doodlerBottom = 0;
-    let upTimerId;
-    let downTimerId;
-    let leftTimerId;
-    let rightTimerId;
-    let isJumping = true;
-    let isGoingLeft = false;
-    let isGoingRight = false;
-    let score = 0;
+// =====================
+// CONFIG
+// =====================
+const GRAVITY = -0.6;
+const JUMP_FORCE = 15;
+const PLAYER_SIZE = 50;
+const PLATFORM_WIDTH = 120;
+const PLATFORM_HEIGHT = 20;
+const PLATFORM_GAP = 120;
 
-    // ===========================
-    // Подгоняем grid под экран + масштабируем объекты
-    // ===========================
-    function resizeGrid() {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
+// =====================
+// GAME STATE
+// =====================
+let lastTime = 0;
+let score = 0;
 
-        grid.style.width = width + 'px';
-        grid.style.height = height + 'px';
+// =====================
+// PLAYER
+// =====================
+const player = {
+    x: canvas.width / 2,
+    y: canvas.height / 3,
+    vy: 0
+};
 
-        // Масштабируем Doodler
-        doodler.style.width = width * 0.15 + 'px';
-        doodler.style.height = 'auto';
-        doodler.style.left = doodlerLeft + 'px';
-        doodler.style.bottom = doodlerBottom + 'px';
+// =====================
+// INPUT (TOUCH)
+// =====================
+let inputX = 0;
 
-        // Масштабируем все платформы
-        platforms.forEach(platform => {
-            platform.width = width * 0.2;
-            platform.height = height * 0.03;
-
-            platform.visual.style.width = platform.width + 'px';
-            platform.visual.style.height = platform.height + 'px';
-            platform.visual.style.left = platform.left + 'px';
-            platform.visual.style.bottom = platform.bottom + 'px';
-        });
-    }
-
-    resizeGrid();
-    window.addEventListener('resize', resizeGrid);
-
-    // ===========================
-    // Класс платформы
-    // ===========================
-    class Platform {
-        constructor(newPlatBottom) {
-            this.width = window.innerWidth * 0.2;    // 20% ширины экрана
-            this.height = window.innerHeight * 0.03; // 3% высоты экрана
-            this.left = Math.random() * (window.innerWidth - this.width);
-            this.bottom = newPlatBottom;
-
-            this.visual = document.createElement('div');
-            this.visual.classList.add('platform');
-
-            this.visual.style.width = this.width + 'px';
-            this.visual.style.height = this.height + 'px';
-            this.visual.style.left = this.left + 'px';
-            this.visual.style.bottom = this.bottom + 'px';
-
-            grid.appendChild(this.visual);
-        }
-    }
-
-    // ===========================
-    // Создание платформ
-    // ===========================
-    function createPlatforms() {
-        const gap = window.innerHeight / platformCount;
-        for (let i = 0; i < platformCount; i++) {
-            const newPlatBottom = i * gap;
-            const newPlatform = new Platform(newPlatBottom);
-            platforms.push(newPlatform);
-        }
-    }
-
-    // ===========================
-    // Движение платформ
-    // ===========================
-    function movePlatforms() {
-        platforms.forEach(platform => {
-            platform.bottom -= 2; // скорость падения
-            platform.visual.style.bottom = platform.bottom + 'px';
-
-            if (platform.bottom < 0) {
-                platform.visual.remove();
-                platforms.shift();
-                const newPlatform = new Platform(window.innerHeight);
-                platforms.push(newPlatform);
-            }
-        });
-    }
-
-    // ===========================
-    // Создание Doodler
-    // ===========================
-    doodler.classList.add('doodler');
-    grid.appendChild(doodler);
-
-    // Начальная позиция Doodler
-    doodlerLeft = window.innerWidth * 0.25;
-    doodlerBottom = window.innerHeight * 0.25;
-
-    doodler.style.left = doodlerLeft + 'px';
-    doodler.style.bottom = doodlerBottom + 'px';
-
-    // ===========================
-    // Движение Doodler
-    // ===========================
-    function moveLeft() {
-        if (isGoingRight) {
-            clearInterval(rightTimerId);
-            isGoingRight = false;
-        }
-        isGoingLeft = true;
-        leftTimerId = setInterval(() => {
-            if (doodlerLeft >= 0) {doodlerLeft -= 5;
-                doodler.style.left = doodlerLeft + 'px';
-            } else moveRight();
-        }, 20);
-    }
-
-    function moveRight() {
-        if (isGoingLeft) {
-            clearInterval(leftTimerId);
-            isGoingLeft = false;
-        }
-        isGoingRight = true;
-        rightTimerId = setInterval(() => {
-            if (doodlerLeft <= window.innerWidth - doodler.offsetWidth) {
-                doodlerLeft += 5;
-                doodler.style.left = doodlerLeft + 'px';
-            } else moveLeft();
-        }, 20);
-    }
-
-    function moveStraight() {
-        isGoingLeft = false;
-        isGoingRight = false;
-        clearInterval(leftTimerId);
-        clearInterval(rightTimerId);
-    }
-
-    function control(e) {
-        if (e.key === 'ArrowLeft') moveLeft();
-        else if (e.key === 'ArrowRight') moveRight();
-        else if (e.key === 'ArrowUp') moveStraight();
-    }
-
-    // ===========================
-    // Запуск игры
-    // ===========================
-    function start() {
-        createPlatforms();
-        setInterval(movePlatforms, 30);
-        document.addEventListener('keyup', control);
-
-        // Сенсорное управление
-        grid.addEventListener('touchstart', e => {
-            e.preventDefault();
-            const x = e.touches[0].clientX;
-            if (x < window.innerWidth / 2) moveLeft();
-            else moveRight();
-        }, { passive: false });
-
-        grid.addEventListener('touchend', e => {
-            e.preventDefault();
-            moveStraight();
-        }, { passive: false });
-    }
-
-    start();
+canvas.addEventListener('touchstart', e => {
+    const x = e.touches[0].clientX;
+    inputX = x < canvas.width / 2 ? -1 : 1;
 });
+
+canvas.addEventListener('touchend', () => {
+    inputX = 0;
+});
+
+// =====================
+// PLATFORMS
+// =====================
+const platforms = [];
+
+function createPlatforms() {
+    for (let i = 0; i < 10; i++) {
+        platforms.push({
+            x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+            y: i * PLATFORM_GAP,
+            type: Math.random() < 0.25 ? 'broken' : 'normal',
+            used: false
+        });
+    }
+}
+
+createPlatforms();
+
+// =====================
+// UPDATE
+// =====================
+function update(dt) {
+    // --- horizontal move
+    player.x += inputX * 6;
+    if (player.x < -PLAYER_SIZE) player.x = canvas.width;
+    if (player.x > canvas.width) player.x = -PLAYER_SIZE;
+
+    // --- gravity
+    player.vy += GRAVITY;
+    player.y += player.vy;
+
+    // --- collisions
+    platforms.forEach(p => {
+        if (
+            player.vy < 0 &&
+            player.y <= p.y + PLATFORM_HEIGHT &&
+            player.y >= p.y &&
+            player.x + PLAYER_SIZE > p.x &&
+            player.x < p.x + PLATFORM_WIDTH
+        ) {
+            if (p.type === 'broken' && p.used) return;
+
+            player.vy = JUMP_FORCE;
+            if (p.type === 'broken') p.used = true;
+        }
+    });
+
+    // --- camera (WORLD MOVES)
+    if (player.y > canvas.height / 2) {
+        const delta = player.y - canvas.height / 2;
+        player.y = canvas.height / 2;
+        platforms.forEach(p => p.y -= delta);
+        score += Math.floor(delta);
+    }
+
+    // --- recycle platforms
+    platforms.forEach((p, i) => {
+        if (p.y < -PLATFORM_HEIGHT) {
+            platforms[i] = {
+                x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+                y: canvas.height + Math.random() * 100,
+                type: Math.random() < Math.min(0.4, score / 5000) ? 'broken' : 'normal',
+                used: false
+            };
+        }
+    });
+
+    // --- game over
+    if (player.y < -100) {
+        location.reload();
+    }
+}
+
+// =====================
+// DRAW
+// =====================
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // background
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // player
+    ctx.fillStyle = 'yellow';
+    ctx.fillRect(player.x, canvas.height - player.y, PLAYER_SIZE, PLAYER_SIZE);
+
+    // platforms
+    platforms.forEach(p => {
+        if (p.type === 'broken' && p.used) return;
+        ctx.fillStyle = p.type === 'broken' ? '#ff4444' : '#00ff88';
+        ctx.fillRect(
+            p.x,
+            canvas.height - p.y,
+            PLATFORM_WIDTH,
+            PLATFORM_HEIGHT
+        );
+    });
+
+    // score
+    ctx.fillStyle = '#fff';
+    ctx.font = '20px Arial';
+    ctx.fillText(`Score: ${score}`, 20, 30);
+}
+
+// =====================
+// LOOP
+// =====================
+function gameLoop(t) {
+    const dt = t - lastTime;
+    lastTime = t;
+
+    update(dt);
+    draw();
+
+    requestAnimationFrame(gameLoop);
+}
+
+requestAnimationFrame(gameLoop);
