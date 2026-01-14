@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     grid.style.width = LOGICAL_WIDTH + 'px'
     grid.style.height = LOGICAL_HEIGHT + 'px'
     grid.style.transform = scale(${scale})
+    grid.style.transformOrigin = 'top left'
   }
 
   resize()
@@ -69,7 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
     velocityY += GRAVITY
     doodlerY += velocityY
 
-    if (doodlerY < 0) doodlerY = 0
+    if (doodlerY < 0) {
+      doodlerY = 0
+      velocityY = JUMP_FORCE
+    }
 
     platforms.forEach(p => {
       if (
@@ -83,6 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })
 
+    // Ограничения по X
+    if (doodlerX < 0) doodlerX = 0
+    if (doodlerX > LOGICAL_WIDTH - 60) doodlerX = LOGICAL_WIDTH - 60
+
     doodler.style.left = doodlerX + 'px'
     doodler.style.bottom = doodlerY + 'px'
 
@@ -94,8 +102,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Touch control ===== */
   grid.addEventListener('touchstart', e => {
-    const x = e.touches[0].clientX
-    if (x < window.innerWidth / 2) doodlerX -= 20
+    e.preventDefault()
+
+    const rect = grid.getBoundingClientRect()
+    const touchX = (e.touches[0].clientX - rect.left) / scale
+
+    if (touchX < LOGICAL_WIDTH / 2) doodlerX -= 20
     else doodlerX += 20
   }, { passive: false })
 
