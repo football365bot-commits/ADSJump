@@ -1,133 +1,133 @@
 document.addEventListener('DOMContentLoaded', () => {
     const grid = document.querySelector('.grid');
     const doodler = document.createElement('div');
-    let doodlerLeftSpace = 50;
-    let startPoint = 0;
-    let doodlerBottomSpace = 0;
-    let isGameOver = false;
 
-    let platformCount = 5;
-    let platforms = [];
-    let upTimerId;
-    let downTimerId;
-    let leftTimerId;
-    let rightTimerId;
+    // ===== Логический экран =====
+    const LOGICAL_WIDTH = 400;
+    const LOGICAL_HEIGHT = 600;
+
+    let scale = 1;
+
+    let doodlerLeft = LOGICAL_WIDTH * 0.25;
+    let doodlerBottom = LOGICAL_HEIGHT * 0.25;
+    let startPoint = doodlerBottom;
+
+    let isGameOver = false;
     let isJumping = true;
     let isGoingLeft = false;
     let isGoingRight = false;
+
+    let platforms = [];
+    const platformCount = 5;
+
+    let upTimerId, downTimerId, leftTimerId, rightTimerId;
     let score = 0;
 
-    // ===========================
-    // Настройка размера grid по экрану Telegram
+    // ===== Масштабирование под экран устройства =====
     function resizeGrid() {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
+        scale = Math.min(
+            window.innerWidth / LOGICAL_WIDTH,
+            window.innerHeight / LOGICAL_HEIGHT
+        );
 
-        grid.style.width = width + 'px';
-        grid.style.height = height + 'px';
-
-        // Базовые размеры Doodler и платформ в % от экрана
-        doodler.style.width = (width * 0.15) + 'px';
-        doodler.style.height = 'auto';
+        grid.style.width = LOGICAL_WIDTH + 'px';
+        grid.style.height = LOGICAL_HEIGHT + 'px';
+        grid.style.transform = scale(${scale});
+        grid.style.transformOrigin = 'bottom left';
     }
     resizeGrid();
     window.addEventListener('resize', resizeGrid);
-    // ===========================
 
-    // Создание Doodler
+    // ===== Создание Doodler =====
     function createDoodle() {
-        grid.appendChild(doodler);
         doodler.classList.add('doodler');
+        doodler.style.width = LOGICAL_WIDTH * 0.15 + 'px';
+        doodler.style.height = 'auto';
+        grid.appendChild(doodler);
 
-        startPoint = grid.offsetHeight * 0.25; // стартовая высота Doodler
-        doodlerBottomSpace = startPoint;
-        doodlerLeftSpace = grid.offsetWidth * 0.25;
-
-        doodler.style.left = doodlerLeftSpace + 'px';
-        doodler.style.bottom = doodlerBottomSpace + 'px';
+        doodler.style.left = doodlerLeft + 'px';
+        doodler.style.bottom = doodlerBottom + 'px';
     }
 
-    // Класс платформы
+    // ===== Платформы =====
     class Platform {
-        constructor(newPlatBottom) {
-            this.bottom = newPlatBottom;
-            this.left = Math.random() * (grid.offsetWidth - grid.offsetWidth * 0.2);
-            this.width = grid.offsetWidth * 0.2;
-            this.height = grid.offsetHeight * 0.03;
-            this.visual = document.createElement('div');
+        constructor(bottom) {
+            this.bottom = bottom;
+            this.width = LOGICAL_WIDTH * 0.2;
+            this.height = LOGICAL_HEIGHT * 0.03;
+            this.left = Math.random() * (LOGICAL_WIDTH - this.width);
 
-            const visual = this.visual;
-            visual.classList.add('platform');
-            visual.style.left = this.left + 'px';
-            visual.style.bottom = this.bottom + 'px';
-            visual.style.width = this.width + 'px';
-            visual.style.height = this.height + 'px';
-            grid.appendChild(visual);
+            this.visual = document.createElement('div');
+            this.visual.classList.add('platform');
+            this.visual.style.width = this.width + 'px';
+            this.visual.style.height = this.height + 'px';
+            this.visual.style.left = this.left + 'px';
+            this.visual.style.bottom = this.bottom + 'px';
+            grid.appendChild(this.visual);
         }
     }
 
-    // Создание платформ
     function createPlatforms() {
-        const gap = grid.offsetHeight / platformCount;
+        const gap = LOGICAL_HEIGHT / platformCount;
         for (let i = 0; i < platformCount; i++) {
             const newPlatBottom = gap * i;
-            const newPlatform = new Platform(newPlatBottom);
-            platforms.push(newPlatform);
+            const platform = new Platform(newPlatBottom);
+            platforms.push(platform);
         }
     }
 
-    // Движение платформ
     function movePlatforms() {
-        if (doodlerBottomSpace > grid.offsetHeight * 0.3) {
+        if (doodlerBottom > LOGICAL_HEIGHT * 0.3) {
             platforms.forEach(platform => {
-                platform.bottom -= 4;
+                platform.bottom -= LOGICAL_HEIGHT * 0.007; // скорость падения
                 platform.visual.style.bottom = platform.bottom + 'px';
 
                 if (platform.bottom < 0) {
                     platform.visual.remove();
                     platforms.shift();
                     score++;
-                    const newPlatform = new Platform(grid.offsetHeight);
+                    const newPlatform = new Platform(LOGICAL_HEIGHT);
                     platforms.push(newPlatform);
                 }
             });
         }
     }
 
-    // Прыжок
+    // ===== Прыжок =====
     function jump() {
         clearInterval(downTimerId);
         isJumping = true;
         upTimerId = setInterval(() => {
-            doodlerBottomSpace += 20;
-            doodler.style.bottom = doodlerBottomSpace + 'px';
-            if (doodlerBottomSpace > startPoint + grid.offsetHeight * 0.33) {
+            doodlerBottom += LOGICAL_HEIGHT * 0.033;
+            doodler.style.bottom = doodlerBottom + 'px';
+            if (doodlerBottom > startPoint + LOGICAL_HEIGHT * 0.33) {
                 fall();
                 isJumping = false;
             }
         }, 30);
     }
 
-    // Падение
+    // ===== Падение =====
     function fall() {
         isJumping = false;
         clearInterval(upTimerId);
         downTimerId = setInterval(() => {
-            doodlerBottomSpace -= 5;
-            doodler.style.bottom = doodlerBottomSpace + 'px';
+            doodlerBottom -= LOGICAL_HEIGHT * 0.008;
+            doodler.style.bottom = doodlerBottom + 'px';
 
-            if (doodlerBottomSpace <= 0) {
+            if (doodlerBottom <= 0) {
                 gameOver();
             }
 
             platforms.forEach(platform => {
                 if (
-                    doodlerBottomSpace >= platform.bottom &&
-                    doodlerBottomSpace <= platform.bottom + platform.height &&doodlerLeftSpace + doodler.offsetWidth >= platform.left &&
-                    doodlerLeftSpace <= platform.left + platform.width &&
+                    doodlerBottom >= platform.bottom &&
+                    doodlerBottom <= platform.bottom + platform.height &&
+                    doodlerLeft + doodler.offsetWidth >= platform.left &&
+                    doodlerLeft <= platform.left + platform.width &&
                     !isJumping
                 ) {
-                    startPoint = doodlerBottomSpace;
+                    startPoint = doodlerBottom;
                     jump();
                     isJumping = true;
                 }
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 20);
     }
 
-    // Движение Doodler
+    // ===== Движение Doodler =====
     function moveLeft() {
         if (isGoingRight) {
             clearInterval(rightTimerId);
@@ -143,9 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         isGoingLeft = true;
         leftTimerId = setInterval(() => {
-            if (doodlerLeftSpace >= 0) {
-                doodlerLeftSpace -= 5;
-                doodler.style.left = doodlerLeftSpace + 'px';
+            if (doodlerLeft >= 0) {
+                doodlerLeft -= LOGICAL_WIDTH * 0.0125;
+                doodler.style.left = doodlerLeft + 'px';
             } else moveRight();
         }, 20);
     }
@@ -157,9 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         isGoingRight = true;
         rightTimerId = setInterval(() => {
-            if (doodlerLeftSpace <= grid.offsetWidth - doodler.offsetWidth) {
-                doodlerLeftSpace += 5;
-                doodler.style.left = doodlerLeftSpace + 'px';
+            if (doodlerLeft <= LOGICAL_WIDTH - doodler.offsetWidth) {
+                doodlerLeft += LOGICAL_WIDTH * 0.0125;
+                doodler.style.left = doodlerLeft + 'px';
             } else moveLeft();
         }, 20);
     }
@@ -204,9 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== Конец игры =====
     function gameOver() {
         isGameOver = true;
-        while (grid.firstChild) {
-            grid.removeChild(grid.firstChild);
-        }
+        while (grid.firstChild) grid.removeChild(grid.firstChild);
         grid.innerHTML = score;
         clearInterval(upTimerId);
         clearInterval(downTimerId);
@@ -214,6 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(rightTimerId);
     }
 
-    // Запуск
+    // ===== Запуск =====
     start();
 });
