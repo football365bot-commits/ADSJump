@@ -8,119 +8,121 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const grid = document.querySelector('.grid')
     const doodler = document.createElement('div')
-    let doodlerLeftSpace = 50
-    let startPoint = 150
-    let doodlerBottomSpace = startPoint
+
+    let doodlerLeft = 0.125 // в процентах от ширины grid (пример: 50/400)
+    let doodlerBottom = 0.25 // в процентах от высоты grid (пример: 150/600)
     let isGameOver = false
 
-    let platformCount = 5
-    let platforms = []
-    let upTimerId  
-    let downTimerId 
+    const platformCount = 5
+    const platforms = []
+
+    let upTimerId
+    let downTimerId
     let leftTimerId
     let rightTimerId
+
     let isJumping = true
     let isGoingLeft = false
     let isGoingRight = false
     let score = 0
+    let startPoint = doodlerBottom
 
-    // ===========================
-    // Размер grid под экран Telegram
-    function resizeGrid() {
-        const tg = window.Telegram.WebApp
-        grid.style.width = tg.viewportWidth + 'px'
-        grid.style.height = tg.viewportHeight + 'px'
-    }
-    resizeGrid()
-    window.addEventListener('resize', resizeGrid)
-    // ===========================
+    // ===== Получаем размеры в пикселях по текущему экрану =====
+    function pxWidth(percent) { return percent * grid.offsetWidth }
+    function pxHeight(percent) { return percent * grid.offsetHeight }
 
-    // Создание Doodler
+    // ===== Создание Doodler =====
     function createDoodle() {
         grid.appendChild(doodler)
         doodler.classList.add('doodler')
-        doodlerLeftSpace = platforms[0].left
-        doodler.style.left = doodlerLeftSpace + 'px'
-        doodler.style.bottom = doodlerBottomSpace + 'px'
+        doodler.style.width = pxWidth(0.2175) + 'px' // 87/400
+        doodler.style.height = pxHeight(0.1416) + 'px' // 85/600
+        doodler.style.left = pxWidth(doodlerLeft) + 'px'
+        doodler.style.bottom = pxHeight(doodlerBottom) + 'px'
     }
 
-    // Класс платформы
+    // ===== Класс платформы =====
     class Platform {
-        constructor(newPlatBottom) {
-            this.bottom = newPlatBottom
-            this.left = Math.random() * (grid.offsetWidth - 85)
+        constructor(bottomPercent) {
+            this.bottom = bottomPercent // в процентах
+            this.left = Math.random() * (1 - 0.2125) // 85/400
             this.visual = document.createElement('div')
-
             const visual = this.visual
             visual.classList.add('platform')
-            visual.style.left = this.left + 'px'
-            visual.style.bottom = this.bottom + 'px'
+            visual.style.width = pxWidth(0.2125) + 'px'
+            visual.style.height = pxHeight(0.025) + 'px' // 15/600
+            visual.style.left = pxWidth(this.left) + 'px'
+            visual.style.bottom = pxHeight(this.bottom) + 'px'
             grid.appendChild(visual)
         }
-    }
 
-    // Создание платформ
-    function createPlatforms() {
-        for (let i = 0; i < platformCount; i++) {
-            let platGap = grid.offsetHeight / platformCount
-            let newPlatBottom = 100 + i * platGap 
-            let newPlatform = new Platform(newPlatBottom)
-            platforms.push(newPlatform)
+        updatePosition() {
+            this.visual.style.left = pxWidth(this.left) + 'px'
+            this.visual.style.bottom = pxHeight(this.bottom) + 'px'
         }
     }
 
-    // Движение платформ
-    function movePlatforms() {
-        if (doodlerBottomSpace > 200) {
-            platforms.forEach(platform => {
-                platform.bottom -= 4
-                platform.visual.style.bottom = platform.bottom + 'px'
+    // ===== Создание платформ =====
+    function createPlatforms() {
+        for (let i = 0; i < platformCount; i++) {
+            let gap = 1 / platformCount
+            let platBottom = i * gap
+            let p = new Platform(platBottom)
+            platforms.push(p)
+        }
+    }
 
-                if (platform.bottom < 10) {
-                    platforms[0].visual.remove()
+    // ===== Движение платформ вверх =====
+    function movePlatforms() {
+        if (doodlerBottom > 0.33) { // 1/3 высоты экрана
+            platforms.forEach(platform => {
+                platform.bottom -= 0.0067 // пропорционально движению
+                if (platform.bottom < 0) {
+                    platform.visual.remove()
                     platforms.shift()
                     score++
-                    let newPlatform = new Platform(grid.offsetHeight)
-                    platforms.push(newPlatform)
+                    let newPlat = new Platform(1)
+                    platforms.push(newPlat)
                 }
+                platform.updatePosition()
             })
         }
     }
 
-    // Прыжок
+    // ===== Прыжок =====
     function jump() {
         clearInterval(downTimerId)
         isJumping = true
         upTimerId = setInterval(() => {
-            doodlerBottomSpace += 20
-            doodler.style.bottom = doodlerBottomSpace + 'px'
-            if (doodlerBottomSpace > (startPoint + 200)) {
+            doodlerBottom += 0.0333 // примерно 20px / 600px
+            doodler.style.bottom = pxHeight(doodlerBottom) + 'px'
+            if (doodlerBottom > startPoint + 0.333) { // примерно 200px
                 fall()
                 isJumping = false
             }
         }, 30)
     }
 
-    // Падение
+    // ===== Падение =====
     function fall() {
         isJumping = false
         clearInterval(upTimerId)
         downTimerId = setInterval(() => {
-            doodlerBottomSpace -= 5
-            doodler.style.bottom = doodlerBottomSpace + 'px'
-            if (doodlerBottomSpace <= 0) {
+            doodlerBottom -= 0.0083 // примерно 5px / 600px
+            doodler.style.bottom = pxHeight(doodlerBottom) + 'px'
+
+            if (doodlerBottom <= 0) {
                 gameOver()
             }
 
             platforms.forEach(platform => {
                 if (
-                    (doodlerBottomSpace >= platform.bottom) &&
-                    (doodlerBottomSpace <= (platform.bottom + 15)) &&
-                    ((doodlerLeftSpace + 60) >= platform.left) &&
-                    (doodlerLeftSpace <= (platform.left + 85)) &&
+                    doodlerBottom >= platform.bottom &&
+                    doodlerBottom <= platform.bottom + 0.025 &&(doodlerLeft + 0.2175) >= platform.left &&
+                    doodlerLeft <= platform.left + 0.2125 &&
                     !isJumping
                 ) {
-                    startPoint = doodlerBottomSpace
+                    startPoint = doodlerBottom
                     jump()
                     isJumping = true
                 }
@@ -128,30 +130,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 20)
     }
 
-    // Движение Doodler
+    // ===== Движение Doodler =====
     function moveLeft() {
-        if (isGoingRight) {clearInterval(rightTimerId)
-            isGoingRight = false
-        }
+        if (isGoingRight) { clearInterval(rightTimerId); isGoingRight = false }
         isGoingLeft = true
         leftTimerId = setInterval(() => {
-            if (doodlerLeftSpace >= 0) {
-                doodlerLeftSpace -= 5
-                doodler.style.left = doodlerLeftSpace + 'px'
+            if (doodlerLeft >= 0) {
+                doodlerLeft -= 0.0125 // 5px / 400px
+                doodler.style.left = pxWidth(doodlerLeft) + 'px'
             } else moveRight()
         }, 20)
     }
 
     function moveRight() {
-        if (isGoingLeft) {
-            clearInterval(leftTimerId)
-            isGoingLeft = false
-        }
+        if (isGoingLeft) { clearInterval(leftTimerId); isGoingLeft = false }
         isGoingRight = true
         rightTimerId = setInterval(() => {
-            if (doodlerLeftSpace <= grid.offsetWidth - 87) {
-                doodlerLeftSpace += 5
-                doodler.style.left = doodlerLeftSpace + 'px'
+            if (doodlerLeft <= 1 - 0.2175) {
+                doodlerLeft += 0.0125
+                doodler.style.left = pxWidth(doodlerLeft) + 'px'
             } else moveLeft()
         }, 20)
     }
@@ -163,12 +160,10 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(rightTimerId)
     }
 
-    // Конец игры
+    // ===== Конец игры =====
     function gameOver() {
         isGameOver = true
-        while (grid.firstChild) {
-            grid.removeChild(grid.firstChild)
-        }
+        while (grid.firstChild) grid.removeChild(grid.firstChild)
         grid.innerHTML = score
         clearInterval(upTimerId)
         clearInterval(downTimerId)
@@ -176,29 +171,28 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(rightTimerId)
     }
 
-    // Старт игры
+    // ===== Старт игры =====
     function start() {
         if (!isGameOver) {
-            createPlatforms();
-            createDoodle();
-            setInterval(movePlatforms, 30);
-            jump(startPoint);
+            createPlatforms()
+            createDoodle()
+            setInterval(movePlatforms, 30)
+            jump(startPoint)
 
             // ===== Сенсорное управление =====
             grid.addEventListener('touchstart', (e) => {
-                e.preventDefault();  // блокирует скролл/выделение/лупу
-                const touchX = e.touches[0].clientX;
-                const screenWidth = window.innerWidth;
-                if (touchX < screenWidth / 2) moveLeft();
-                else moveRight();
-            });
-
+                e.preventDefault()
+                const touchX = e.touches[0].clientX
+                const screenWidth = window.innerWidth
+                if (touchX < screenWidth / 2) moveLeft()
+                else moveRight()
+            })
             grid.addEventListener('touchend', (e) => {
-                e.preventDefault(); // блокируем выделение при отпускании
-                moveStraight();     // останавливаем движение
-            });
+                e.preventDefault()
+                moveStraight()
+            })
         }
     }
 
-    // ===== Запуск игры =====
-    start();
+    start()
+})
