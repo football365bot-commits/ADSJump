@@ -1,106 +1,106 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // ===== Telegram Mini App Integration =====
-  const tg = window.Telegram?.WebApp;
-  if (tg) {
-    tg.ready();
-    tg.expand();
+  /* ===== Telegram WebApp Integration ===== */
+  if (window.Telegram?.WebApp) {
+    Telegram.WebApp.ready()
+    Telegram.WebApp.expand()
   }
 
-  const grid = document.querySelector('.grid');
+  /* ===== Логическая база для масштабирования ===== */
+  const BASE_WIDTH = 400
+  const BASE_HEIGHT = 600
 
-  // ===== Логическая база =====
-  const BASE_WIDTH = 400;
-  const BASE_HEIGHT = 600;
+  const grid = document.querySelector('.grid')
+  let scale = 1
 
-  // Масштаб для подгонки под экран пользователя
-  let scaleX = (tg?.viewportWidth || window.innerWidth) / BASE_WIDTH;
-  let scaleY = (tg?.viewportHeight || window.innerHeight) / BASE_HEIGHT;
+  function resizeGrid() {
+    scale = Math.min(
+      window.innerWidth / BASE_WIDTH,
+      window.innerHeight / BASE_HEIGHT
+    )
+    grid.style.width = BASE_WIDTH + 'px'
+    grid.style.height = BASE_HEIGHT + 'px'
+    grid.style.transform = scale(${scale})
+    grid.style.transformOrigin = 'bottom left'
+  }
 
-  grid.style.width = BASE_WIDTH + 'px';
-  grid.style.height = BASE_HEIGHT + 'px';
-  grid.style.transform = scale(${scaleX}, ${scaleY});
-  grid.style.transformOrigin = 'top left';
+  resizeGrid()
+  window.addEventListener('resize', resizeGrid)
 
-  // ===== Игровые переменные =====
-  let doodler = document.createElement('div');
-  doodler.classList.add('doodler');
-  grid.appendChild(doodler);
+  /* ===== Doodler ===== */
+  const doodler = document.createElement('div')
+  doodler.classList.add('doodler')
+  grid.appendChild(doodler)
 
-  let doodlerWidth = 60;   // базовая ширина
-  let doodlerHeight = 60;  // базовая высота
-  let doodlerX = BASE_WIDTH / 2 - doodlerWidth / 2;
-  let doodlerY = 150 * scaleY;
+  let doodlerX = 170
+  let doodlerY = 150
+  let velocityY = 0
 
-  let velocityY = 0;
-  const GRAVITY = -0.6 * scaleY;
-  const JUMP_FORCE = 15 * scaleY;
+  const BASE_DOODLER_WIDTH = 60
+  const BASE_DOODLER_HEIGHT = 60
 
-  // ===== Платформы =====
-  const platforms = [];
-  const PLATFORM_BASE_WIDTH = 85;
-  const PLATFORM_BASE_HEIGHT = 15;
-  const PLATFORM_COUNT = 5;
+  doodler.style.width = BASE_DOODLER_WIDTH + 'px'
+  doodler.style.height = BASE_DOODLER_HEIGHT + 'px'
+
+  /* ===== Platforms ===== */
+  const platforms = []
+  const BASE_PLATFORM_WIDTH = 85
+  const BASE_PLATFORM_HEIGHT = 15
 
   function createPlatform(x, y) {
-    const p = document.createElement('div');
-    p.classList.add('platform');
-    p.style.width = PLATFORM_BASE_WIDTH + 'px';
-    p.style.height = PLATFORM_BASE_HEIGHT + 'px';
-    p.style.left = x + 'px';
-    p.style.bottom = y + 'px';
-    grid.appendChild(p);
-    platforms.push({ el: p, x, y });
+    const p = document.createElement('div')
+    p.classList.add('platform')
+    p.style.width = BASE_PLATFORM_WIDTH + 'px'
+    p.style.height = BASE_PLATFORM_HEIGHT + 'px'
+    p.style.left = x + 'px'
+    p.style.bottom = y + 'px'
+    grid.appendChild(p)
+    platforms.push({ el: p, x, y })
   }
 
-  for (let i = 0; i < PLATFORM_COUNT; i++) {
+  for (let i = 0; i < 6; i++) {
     createPlatform(
-      Math.random() * (BASE_WIDTH - PLATFORM_BASE_WIDTH),
-      100 + i * (BASE_HEIGHT / PLATFORM_COUNT)
-    );
+      Math.random() * (BASE_WIDTH - BASE_PLATFORM_WIDTH),
+      i * 100
+    )
   }
 
-  // ===== Обновление позиций =====
+  /* ===== Physics ===== */
+  const GRAVITY = -0.6
+  const JUMP_FORCE = 15
+
   function update() {
-    // движение по вертикали
-    velocityY += GRAVITY;
-    doodlerY += velocityY;
+    velocityY += GRAVITY
+    doodlerY += velocityY
 
-    if (doodlerY < 0) doodlerY = 0;
+    if (doodlerY < 0) doodlerY = 0
 
-    // проверка столкновения с платформами
     platforms.forEach(p => {
       if (
         velocityY < 0 &&
-        doodlerY <= p.y + PLATFORM_BASE_HEIGHT &&
+        doodlerY <= p.y + BASE_PLATFORM_HEIGHT &&
         doodlerY >= p.y &&
-        doodlerX + doodlerWidth > p.x &&
-        doodlerX < p.x + PLATFORM_BASE_WIDTH
+        doodlerX + BASE_DOODLER_WIDTH > p.x &&
+        doodlerX < p.x + BASE_PLATFORM_WIDTH
       ) {
-        velocityY = JUMP_FORCE;
+        velocityY = JUMP_FORCE
       }
-    });
+    })
 
-    doodler.style.left = doodlerX + 'px';
-    doodler.style.bottom = doodlerY + 'px';
+    doodler.style.left = doodlerX + 'px'
+    doodler.style.bottom = doodlerY + 'px'
 
-    requestAnimationFrame(update);
+    requestAnimationFrame(update)
   }
 
-  // старт прыжка
-  velocityY = JUMP_FORCE;
-  update();
+  velocityY = JUMP_FORCE
+  update()
 
-  // ===== Сенсорное управление =====
+  /* ===== Touch control ===== */
   grid.addEventListener('touchstart', e => {
-    e.preventDefault();
-    const touchX = e.touches[0].clientX / scaleX; // делим на scale, чтобы координаты были логические
-    if (touchX < BASE_WIDTH / 2) doodlerX -= 20;
-    else doodlerX += 20;
-  }, { passive: false });
+    const x = e.touches[0].clientX
+    if (x < window.innerWidth / 2) doodlerX -= 20
+    else doodlerX += 20
+  }, { passive: false })
 
-  grid.addEventListener('touchend', e => {
-    e.preventDefault();
-  });
-
-});
+})
