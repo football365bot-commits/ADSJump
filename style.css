@@ -37,6 +37,9 @@ html, body {
   background-image: url('doodler-guy.png');
   background-size: contain;
   background-repeat: no-repeat;
+  width: 10%;      /* ширина относительно grid */
+  height: auto;    /* высота подстраивается под ширину */
+
 }
 
 /* ==========================
@@ -45,6 +48,8 @@ html, body {
 .platform {
   position: absolute;
   background-image: url('platform.png');
-  background-size: cover;
+  background-size: contain;  /* теперь картинка уменьшится, не обрезаясь */
   background-repeat: no-repeat;
+  width: 20%;               /* ширина платформы относительно grid */
+  height: auto;             /* высота под ширину */
 }
