@@ -179,24 +179,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Старт игры
     function start() {
         if (!isGameOver) {
-            createPlatforms()
-            createDoodle()
-            setInterval(movePlatforms, 30)
-            jump(startPoint)
+            createPlatforms();
+            createDoodle();
+            setInterval(movePlatforms, 30);
+            jump(startPoint);
 
             // ===== Сенсорное управление =====
             grid.addEventListener('touchstart', (e) => {
-                const touchX = e.touches[0].clientX
-                const screenWidth = window.innerWidth
-                if (touchX < screenWidth / 2) moveLeft()
-                else moveRight()
-            })
+                e.preventDefault();  // блокирует скролл/выделение/лупу
+                const touchX = e.touches[0].clientX;
+                const screenWidth = window.innerWidth;
+                if (touchX < screenWidth / 2) moveLeft();
+                else moveRight();
+            });
 
-            grid.addEventListener('touchend', () => moveStraight())
-            // =================================
+            grid.addEventListener('touchend', (e) => {
+                e.preventDefault(); // блокируем выделение при отпускании
+                moveStraight();     // останавливаем движение
+            });
         }
     }
 
-    // Запуск игры
-    start()
-})
+    // ===== Запуск игры =====
+    start();
