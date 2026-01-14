@@ -9,16 +9,16 @@
   }
   
   .doodler {
-    width: 87px;
-    height: 85px;
+    width: 75px;
+    height: 73px;
     background-image: url('doodler-guy.png');
     position: absolute;
     
   }
   
   .platform {
-    width: 85px;
-    height: 15px;
+    width: 75px;
+    height: 8px;
     background-image: url('platform.png');
     position: absolute;
     
