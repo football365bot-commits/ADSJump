@@ -1,114 +1,200 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // ===== Telegram Mini App Integration =====
+    if (window.Telegram?.WebApp) {
+        Telegram.WebApp.ready()
+        Telegram.WebApp.expand()
+    }
+    // =========================================
 
-  /* Telegram */
-  if (window.Telegram?.WebApp) {
-    Telegram.WebApp.ready()
-    Telegram.WebApp.expand()
-  }
+    const grid = document.querySelector('.grid')
+    const doodler = document.createElement('div')
+    let doodlerLeftSpace = 50
+    let startPoint = 150
+    let doodlerBottomSpace = startPoint
+    let isGameOver = false
 
-  const LOGICAL_WIDTH = 400
-  const LOGICAL_HEIGHT = 600
+    let platformCount = 5
+    let platforms = []
+    let upTimerId  
+    let downTimerId 
+    let leftTimerId
+    let rightTimerId
+    let isJumping = true
+    let isGoingLeft = false
+    let isGoingRight = false
+    let score = 0
 
-  const grid = document.querySelector('.grid')
-
-  let scale = 1
-
-  function resize() {
-    scale = Math.min(
-      window.innerWidth / LOGICAL_WIDTH,
-      window.innerHeight / LOGICAL_HEIGHT
-    )
-
-    grid.style.width = LOGICAL_WIDTH + 'px'
-    grid.style.height = LOGICAL_HEIGHT + 'px'
-    grid.style.transform = scale(${scale})
-    grid.style.transformOrigin = 'top left'
-  }
-
-  resize()
-  window.addEventListener('resize', resize)
-
-  /* ===== Doodler ===== */
-  const doodler = document.createElement('div')
-  doodler.classList.add('doodler')
-  doodler.style.width = '60px'
-  doodler.style.height = '60px'
-  grid.appendChild(doodler)
-
-  let doodlerX = 170
-  let doodlerY = 150
-  let velocityY = 0
-
-  /* ===== Platforms ===== */
-  const platforms = []
-  const PLATFORM_WIDTH = 85
-  const PLATFORM_HEIGHT = 15
-
-  function createPlatform(x, y) {
-    const p = document.createElement('div')
-    p.classList.add('platform')
-    p.style.width = PLATFORM_WIDTH + 'px'
-    p.style.height = PLATFORM_HEIGHT + 'px'
-    p.style.left = x + 'px'
-    p.style.bottom = y + 'px'
-    grid.appendChild(p)
-    platforms.push({ el: p, x, y })
-  }
-
-  for (let i = 0; i < 6; i++) {
-    createPlatform(
-      Math.random() * (LOGICAL_WIDTH - PLATFORM_WIDTH),
-      i * 100
-    )
-  }
-
-  /* ===== Physics ===== */
-  const GRAVITY = -0.6
-  const JUMP_FORCE = 15
-
-  function update() {
-    velocityY += GRAVITY
-    doodlerY += velocityY
-
-    if (doodlerY < 0) {
-      doodlerY = 0
-      velocityY = JUMP_FORCE
+    // Создание Doodler
+    function createDoodle() {
+        grid.appendChild(doodler)
+        doodler.classList.add('doodler')
+        doodlerLeftSpace = platforms[0].left
+        doodler.style.left = doodlerLeftSpace + 'px'
+        doodler.style.bottom = doodlerBottomSpace + 'px'
     }
 
-    platforms.forEach(p => {
-      if (
-        velocityY < 0 &&
-        doodlerY <= p.y + PLATFORM_HEIGHT &&
-        doodlerY >= p.y &&
-        doodlerX + 50 > p.x &&
-        doodlerX < p.x + PLATFORM_WIDTH
-      ) {
-        velocityY = JUMP_FORCE
-      }
-    })
+    // Класс платформы
+    class Platform {
+        constructor(newPlatBottom) {
+            this.bottom = newPlatBottom
+            this.left = Math.random() * 315
+            this.visual = document.createElement('div')
 
-    // Ограничения по X
-    if (doodlerX < 0) doodlerX = 0
-    if (doodlerX > LOGICAL_WIDTH - 60) doodlerX = LOGICAL_WIDTH - 60
+            const visual = this.visual
+            visual.classList.add('platform')
+            visual.style.left = this.left + 'px'
+            visual.style.bottom = this.bottom + 'px'
+            grid.appendChild(visual)
+        }
+    }
 
-    doodler.style.left = doodlerX + 'px'
-    doodler.style.bottom = doodlerY + 'px'
+    // Создание платформ
+    function createPlatforms() {
+        for (let i = 0; i < platformCount; i++) {
+            let platGap = 600 / platformCount
+            let newPlatBottom = 100 + i * platGap 
+            let newPlatform = new Platform(newPlatBottom)
+            platforms.push(newPlatform)
+        }
+    }
 
-    requestAnimationFrame(update)
-  }
+    // Движение платформ
+    function movePlatforms() {
+        if (doodlerBottomSpace > 200) {
+            platforms.forEach(platform => {
+                platform.bottom -= 4
+                platform.visual.style.bottom = platform.bottom + 'px'
 
-  velocityY = JUMP_FORCE
-  update()
+                if (platform.bottom < 10) {
+                    let firstPlatform = platforms[0].visual
+                    firstPlatform.classList.remove('platform')
+                    platforms.shift()
+                    score++
+                    let newPlatform = new Platform(600)
+                    platforms.push(newPlatform)
+                }
+            })
+        }
+    }
 
-  /* ===== Touch control ===== */
-  grid.addEventListener('touchstart', e => {
-    e.preventDefault()
+    // Прыжок
+    function jump() {
+        clearInterval(downTimerId)
+        isJumping = true
+        upTimerId = setInterval(function() {
+            doodlerBottomSpace += 20
+            doodler.style.bottom = doodlerBottomSpace + 'px'
+            if (doodlerBottomSpace > (startPoint + 200)) {
+                fall()
+                isJumping = false
+            }
+        }, 30)
+    }
 
-    const rect = grid.getBoundingClientRect()
-    const touchX = (e.touches[0].clientX - rect.left) / scale
+    // Падение
+    function fall() {
+        isJumping = false
+        clearInterval(upTimerId)
+        downTimerId = setInterval(function() {
+            doodlerBottomSpace -= 5
+            doodler.style.bottom = doodlerBottomSpace + 'px'
+            if (doodlerBottomSpace <= 0) {
+                gameOver()
+            }
 
-    if (touchX < LOGICAL_WIDTH / 2) doodlerX -= 20
-    else doodlerX += 20
-  }, { passive: false })
+            platforms.forEach(platform => {
+                if (
+                    (doodlerBottomSpace >= platform.bottom) &&
+                    (doodlerBottomSpace <= (platform.bottom + 15)) &&
+                    ((doodlerLeftSpace + 60) >= platform.left) &&
+                    (doodlerLeftSpace <= (platform.left + 85)) &&
+                    !isJumping
+                ) {
+                    startPoint = doodlerBottomSpace
+                    jump()
+                    isJumping = true
+                }
+            })
+        }, 20)
+    }
 
+    // Конец игры
+    function gameOver() {
+        isGameOver = true
+        while (grid.firstChild) {
+            grid.removeChild(grid.firstChild)
+        }
+        grid.innerHTML = score
+        clearInterval(upTimerId)
+        clearInterval(downTimerId)
+        clearInterval(leftTimerId)
+        clearInterval(rightTimerId)
+    }
+
+    // Движение Doodler
+    function moveLeft() {
+        if (isGoingRight) {
+            clearInterval(rightTimerId)
+            isGoingRight = false
+        }
+        isGoingLeft = true
+        leftTimerId = setInterval(function () {
+            if (doodlerLeftSpace >= 0) {
+                doodlerLeftSpace -= 5
+                doodler.style.left = doodlerLeftSpace + 'px'
+            } else moveRight()
+        }, 20)
+    }
+
+    function moveRight() {
+        if (isGoingLeft) {
+            clearInterval(leftTimerId)
+            isGoingLeft = false
+        }
+        isGoingRight = true
+        rightTimerId = setInterval(function () {
+            if (doodlerLeftSpace <= 313) {
+                doodlerLeftSpace += 5
+                doodler.style.left = doodlerLeftSpace + 'px'
+            } else moveLeft()
+        }, 20)
+    }
+
+    function moveStraight() {
+        isGoingLeft = false
+        isGoingRight = false
+        clearInterval(leftTimerId)
+        clearInterval(rightTimerId)
+    }
+
+    // Старт игры
+    function start() {
+        if (!isGameOver) {
+            createPlatforms()
+            createDoodle()
+            
+            setInterval(movePlatforms, 30)
+            jump(startPoint)
+
+            // ===== Сенсорное управление: экран делим на 2 половины =====
+            grid.addEventListener('touchstart', (e) => {
+                const touchX = e.touches[0].clientX
+                const screenWidth = window.innerWidth
+
+                if (touchX < screenWidth / 2) {
+                    moveLeft()
+                } else {
+                    moveRight()
+                }
+            })
+
+            grid.addEventListener('touchend', () => {
+                moveStraight() // остановка движения
+            })
+            // ==============================================================
+        }
+    }
+
+    // Запуск игры
+    start()
 })
