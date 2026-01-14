@@ -1,19 +1,19 @@
 /* ==========================
-   Общие настройки для body/html
+   Общие настройки
    ========================== */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;               /* убираем скролл */
-  touch-action: none;             /* запрещает скролл/перетаскивание */
-  user-select: none;              /* запрещает выделение текста */
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
   -webkit-user-select: none;
   -ms-user-select: none;
-  -webkit-touch-callout: none;    /* отключает "лупу" на долгий тап */
-  -webkit-tap-highlight-color: transparent; /* убираем серое выделение при тапе */
-  background-color: #000;         /* чёрный фон, пока не загрузится background */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  background-color: #000;
 }
 
 /* ==========================
@@ -24,7 +24,7 @@ html, body {
   height: 100%;
   position: relative;
   background-image: url('background.png');
-  background-size: cover;        /* растягиваем фон под весь экран */
+  background-size: cover;
   background-position: center;
   overflow: hidden;
 }
@@ -35,10 +35,12 @@ html, body {
 .doodler {
   position: absolute;
   background-image: url('doodler-guy.png');
-  background-size: contain;      /* изображение масштабируется */
+  background-size: contain;
   background-repeat: no-repeat;
-  width: 10%;                    /* можно менять через JS для точного размера */
-  height: auto;
+
+  /* ❗ размеры задаёт JS */
+  width: 0;
+  height: 0;
 }
 
 /* ==========================
@@ -47,8 +49,10 @@ html, body {
 .platform {
   position: absolute;
   background-image: url('platform.png');
-  background-size: cover;        /* платформа растягивается под ширину */
+  background-size: contain;
   background-repeat: no-repeat;
-  width: 20%;                    /* можно менять через JS */
-  height: 3%;                     /* высота платформы относительно экрана */
+
+  /* ❗ размеры задаёт JS */
+  width: 0;
+  height: 0;
 }
