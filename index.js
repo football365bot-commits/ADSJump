@@ -24,6 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let isGoingRight = false
     let score = 0
 
+    // ===========================
+    // Размер grid под экран Telegram
+    function resizeGrid() {
+        const tg = window.Telegram.WebApp
+        grid.style.width = tg.viewportWidth + 'px'
+        grid.style.height = tg.viewportHeight + 'px'
+    }
+    resizeGrid()
+    window.addEventListener('resize', resizeGrid)
+    // ===========================
+
     // Создание Doodler
     function createDoodle() {
         grid.appendChild(doodler)
@@ -37,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     class Platform {
         constructor(newPlatBottom) {
             this.bottom = newPlatBottom
-            this.left = Math.random() * 315
+            this.left = Math.random() * (grid.offsetWidth - 85)
             this.visual = document.createElement('div')
 
             const visual = this.visual
@@ -51,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Создание платформ
     function createPlatforms() {
         for (let i = 0; i < platformCount; i++) {
-            let platGap = 600 / platformCount
+            let platGap = grid.offsetHeight / platformCount
             let newPlatBottom = 100 + i * platGap 
             let newPlatform = new Platform(newPlatBottom)
             platforms.push(newPlatform)
@@ -66,11 +77,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 platform.visual.style.bottom = platform.bottom + 'px'
 
                 if (platform.bottom < 10) {
-                    let firstPlatform = platforms[0].visual
-                    firstPlatform.classList.remove('platform')
+                    platforms[0].visual.remove()
                     platforms.shift()
                     score++
-                    let newPlatform = new Platform(600)
+                    let newPlatform = new Platform(grid.offsetHeight)
                     platforms.push(newPlatform)
                 }
             })
@@ -81,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function jump() {
         clearInterval(downTimerId)
         isJumping = true
-        upTimerId = setInterval(function() {
+        upTimerId = setInterval(() => {
             doodlerBottomSpace += 20
             doodler.style.bottom = doodlerBottomSpace + 'px'
             if (doodlerBottomSpace > (startPoint + 200)) {
@@ -95,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function fall() {
         isJumping = false
         clearInterval(upTimerId)
-        downTimerId = setInterval(function() {
+        downTimerId = setInterval(() => {
             doodlerBottomSpace -= 5
             doodler.style.bottom = doodlerBottomSpace + 'px'
             if (doodlerBottomSpace <= 0) {
@@ -118,27 +128,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 20)
     }
 
-    // Конец игры
-    function gameOver() {
-        isGameOver = true
-        while (grid.firstChild) {
-            grid.removeChild(grid.firstChild)
-        }
-        grid.innerHTML = score
-        clearInterval(upTimerId)
-        clearInterval(downTimerId)
-        clearInterval(leftTimerId)
-        clearInterval(rightTimerId)
-    }
-
     // Движение Doodler
     function moveLeft() {
-        if (isGoingRight) {
-            clearInterval(rightTimerId)
+        if (isGoingRight) {clearInterval(rightTimerId)
             isGoingRight = false
         }
         isGoingLeft = true
-        leftTimerId = setInterval(function () {
+        leftTimerId = setInterval(() => {
             if (doodlerLeftSpace >= 0) {
                 doodlerLeftSpace -= 5
                 doodler.style.left = doodlerLeftSpace + 'px'
@@ -152,8 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
             isGoingLeft = false
         }
         isGoingRight = true
-        rightTimerId = setInterval(function () {
-            if (doodlerLeftSpace <= 313) {
+        rightTimerId = setInterval(() => {
+            if (doodlerLeftSpace <= grid.offsetWidth - 87) {
                 doodlerLeftSpace += 5
                 doodler.style.left = doodlerLeftSpace + 'px'
             } else moveLeft()
@@ -167,31 +163,37 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(rightTimerId)
     }
 
+    // Конец игры
+    function gameOver() {
+        isGameOver = true
+        while (grid.firstChild) {
+            grid.removeChild(grid.firstChild)
+        }
+        grid.innerHTML = score
+        clearInterval(upTimerId)
+        clearInterval(downTimerId)
+        clearInterval(leftTimerId)
+        clearInterval(rightTimerId)
+    }
+
     // Старт игры
     function start() {
         if (!isGameOver) {
             createPlatforms()
             createDoodle()
-            
             setInterval(movePlatforms, 30)
             jump(startPoint)
 
-            // ===== Сенсорное управление: экран делим на 2 половины =====
+            // ===== Сенсорное управление =====
             grid.addEventListener('touchstart', (e) => {
                 const touchX = e.touches[0].clientX
                 const screenWidth = window.innerWidth
-
-                if (touchX < screenWidth / 2) {
-                    moveLeft()
-                } else {
-                    moveRight()
-                }
+                if (touchX < screenWidth / 2) moveLeft()
+                else moveRight()
             })
 
-            grid.addEventListener('touchend', () => {
-                moveStraight() // остановка движения
-            })
-            // ==============================================================
+            grid.addEventListener('touchend', () => moveStraight())
+            // =================================
         }
     }
 
