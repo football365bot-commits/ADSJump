@@ -1,200 +1,106 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ===== Telegram Mini App Integration =====
-    if (window.Telegram?.WebApp) {
-        Telegram.WebApp.ready()
-        Telegram.WebApp.expand()
-    }
-    // =========================================
 
-    const grid = document.querySelector('.grid')
-    const doodler = document.createElement('div')
-    let doodlerLeftSpace = 50
-    let startPoint = 150
-    let doodlerBottomSpace = startPoint
-    let isGameOver = false
+  // ===== Telegram Mini App Integration =====
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+  }
 
-    let platformCount = 5
-    let platforms = []
-    let upTimerId  
-    let downTimerId 
-    let leftTimerId
-    let rightTimerId
-    let isJumping = true
-    let isGoingLeft = false
-    let isGoingRight = false
-    let score = 0
+  const grid = document.querySelector('.grid');
 
-    // Создание Doodler
-    function createDoodle() {
-        grid.appendChild(doodler)
-        doodler.classList.add('doodler')
-        doodlerLeftSpace = platforms[0].left
-        doodler.style.left = doodlerLeftSpace + 'px'
-        doodler.style.bottom = doodlerBottomSpace + 'px'
-    }
+  // ===== Логическая база =====
+  const BASE_WIDTH = 400;
+  const BASE_HEIGHT = 600;
 
-    // Класс платформы
-    class Platform {
-        constructor(newPlatBottom) {
-            this.bottom = newPlatBottom
-            this.left = Math.random() * 315
-            this.visual = document.createElement('div')
+  // Масштаб для подгонки под экран пользователя
+  let scaleX = (tg?.viewportWidth || window.innerWidth) / BASE_WIDTH;
+  let scaleY = (tg?.viewportHeight || window.innerHeight) / BASE_HEIGHT;
 
-            const visual = this.visual
-            visual.classList.add('platform')
-            visual.style.left = this.left + 'px'
-            visual.style.bottom = this.bottom + 'px'
-            grid.appendChild(visual)
-        }
-    }
+  grid.style.width = BASE_WIDTH + 'px';
+  grid.style.height = BASE_HEIGHT + 'px';
+  grid.style.transform = scale(${scaleX}, ${scaleY});
+  grid.style.transformOrigin = 'top left';
 
-    // Создание платформ
-    function createPlatforms() {
-        for (let i = 0; i < platformCount; i++) {
-            let platGap = 600 / platformCount
-            let newPlatBottom = 100 + i * platGap 
-            let newPlatform = new Platform(newPlatBottom)
-            platforms.push(newPlatform)
-        }
-    }
+  // ===== Игровые переменные =====
+  let doodler = document.createElement('div');
+  doodler.classList.add('doodler');
+  grid.appendChild(doodler);
 
-    // Движение платформ
-    function movePlatforms() {
-        if (doodlerBottomSpace > 200) {
-            platforms.forEach(platform => {
-                platform.bottom -= 4
-                platform.visual.style.bottom = platform.bottom + 'px'
+  let doodlerWidth = 60;   // базовая ширина
+  let doodlerHeight = 60;  // базовая высота
+  let doodlerX = BASE_WIDTH / 2 - doodlerWidth / 2;
+  let doodlerY = 150 * scaleY;
 
-                if (platform.bottom < 10) {
-                    let firstPlatform = platforms[0].visual
-                    firstPlatform.classList.remove('platform')
-                    platforms.shift()
-                    score++
-                    let newPlatform = new Platform(600)
-                    platforms.push(newPlatform)
-                }
-            })
-        }
-    }
+  let velocityY = 0;
+  const GRAVITY = -0.6 * scaleY;
+  const JUMP_FORCE = 15 * scaleY;
 
-    // Прыжок
-    function jump() {
-        clearInterval(downTimerId)
-        isJumping = true
-        upTimerId = setInterval(function() {
-            doodlerBottomSpace += 20
-            doodler.style.bottom = doodlerBottomSpace + 'px'
-            if (doodlerBottomSpace > (startPoint + 200)) {
-                fall()
-                isJumping = false
-            }
-        }, 30)
-    }
+  // ===== Платформы =====
+  const platforms = [];
+  const PLATFORM_BASE_WIDTH = 85;
+  const PLATFORM_BASE_HEIGHT = 15;
+  const PLATFORM_COUNT = 5;
 
-    // Падение
-    function fall() {
-        isJumping = false
-        clearInterval(upTimerId)
-        downTimerId = setInterval(function() {
-            doodlerBottomSpace -= 5
-            doodler.style.bottom = doodlerBottomSpace + 'px'
-            if (doodlerBottomSpace <= 0) {
-                gameOver()
-            }
+  function createPlatform(x, y) {
+    const p = document.createElement('div');
+    p.classList.add('platform');
+    p.style.width = PLATFORM_BASE_WIDTH + 'px';
+    p.style.height = PLATFORM_BASE_HEIGHT + 'px';
+    p.style.left = x + 'px';
+    p.style.bottom = y + 'px';
+    grid.appendChild(p);
+    platforms.push({ el: p, x, y });
+  }
 
-            platforms.forEach(platform => {
-                if (
-                    (doodlerBottomSpace >= platform.bottom) &&
-                    (doodlerBottomSpace <= (platform.bottom + 15)) &&
-                    ((doodlerLeftSpace + 60) >= platform.left) &&
-                    (doodlerLeftSpace <= (platform.left + 85)) &&
-                    !isJumping
-                ) {
-                    startPoint = doodlerBottomSpace
-                    jump()
-                    isJumping = true
-                }
-            })
-        }, 20)
-    }
+  for (let i = 0; i < PLATFORM_COUNT; i++) {
+    createPlatform(
+      Math.random() * (BASE_WIDTH - PLATFORM_BASE_WIDTH),
+      100 + i * (BASE_HEIGHT / PLATFORM_COUNT)
+    );
+  }
 
-    // Конец игры
-    function gameOver() {
-        isGameOver = true
-        while (grid.firstChild) {
-            grid.removeChild(grid.firstChild)
-        }
-        grid.innerHTML = score
-        clearInterval(upTimerId)
-        clearInterval(downTimerId)
-        clearInterval(leftTimerId)
-        clearInterval(rightTimerId)
-    }
+  // ===== Обновление позиций =====
+  function update() {
+    // движение по вертикали
+    velocityY += GRAVITY;
+    doodlerY += velocityY;
 
-    // Движение Doodler
-    function moveLeft() {
-        if (isGoingRight) {
-            clearInterval(rightTimerId)
-            isGoingRight = false
-        }
-        isGoingLeft = true
-        leftTimerId = setInterval(function () {
-            if (doodlerLeftSpace >= 0) {
-                doodlerLeftSpace -= 5
-                doodler.style.left = doodlerLeftSpace + 'px'
-            } else moveRight()
-        }, 20)
-    }
+    if (doodlerY < 0) doodlerY = 0;
 
-    function moveRight() {
-        if (isGoingLeft) {
-            clearInterval(leftTimerId)
-            isGoingLeft = false
-        }
-        isGoingRight = true
-        rightTimerId = setInterval(function () {
-            if (doodlerLeftSpace <= 313) {
-                doodlerLeftSpace += 5
-                doodler.style.left = doodlerLeftSpace + 'px'
-            } else moveLeft()
-        }, 20)
-    }
+    // проверка столкновения с платформами
+    platforms.forEach(p => {
+      if (
+        velocityY < 0 &&
+        doodlerY <= p.y + PLATFORM_BASE_HEIGHT &&
+        doodlerY >= p.y &&
+        doodlerX + doodlerWidth > p.x &&
+        doodlerX < p.x + PLATFORM_BASE_WIDTH
+      ) {
+        velocityY = JUMP_FORCE;
+      }
+    });
 
-    function moveStraight() {
-        isGoingLeft = false
-        isGoingRight = false
-        clearInterval(leftTimerId)
-        clearInterval(rightTimerId)
-    }
+    doodler.style.left = doodlerX + 'px';
+    doodler.style.bottom = doodlerY + 'px';
 
-    // Старт игры
-    function start() {
-        if (!isGameOver) {
-            createPlatforms()
-            createDoodle()
-            
-            setInterval(movePlatforms, 30)
-            jump(startPoint)
+    requestAnimationFrame(update);
+  }
 
-            // ===== Сенсорное управление: экран делим на 2 половины =====
-            grid.addEventListener('touchstart', (e) => {
-                const touchX = e.touches[0].clientX
-                const screenWidth = window.innerWidth
+  // старт прыжка
+  velocityY = JUMP_FORCE;
+  update();
 
-                if (touchX < screenWidth / 2) {
-                    moveLeft()
-                } else {
-                    moveRight()
-                }
-            })
+  // ===== Сенсорное управление =====
+  grid.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const touchX = e.touches[0].clientX / scaleX; // делим на scale, чтобы координаты были логические
+    if (touchX < BASE_WIDTH / 2) doodlerX -= 20;
+    else doodlerX += 20;
+  }, { passive: false });
 
-            grid.addEventListener('touchend', () => {
-                moveStraight() // остановка движения
-            })
-            // ==============================================================
-        }
-    }
+  grid.addEventListener('touchend', e => {
+    e.preventDefault();
+  });
 
-    // Запуск игры
-    start()
-})
+});
