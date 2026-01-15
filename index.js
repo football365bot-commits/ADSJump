@@ -66,6 +66,26 @@ function getItemForPlatform() {
 }
 
 // =====================
+// START PLATFORM
+// =====================
+function createStartPlatform() {
+    const startPlatform = {
+        x: canvas.width / 2 - PLATFORM_WIDTH / 2,
+        y: 50, // чуть выше низа экрана
+        type: 'normal',
+        vx: 0,
+        used: false,
+        item: null,
+        temp: true, // временная платформа
+        lifeTime: 2000, // 2 секунды
+        spawnTime: performance.now() // момент появления
+    };
+    platforms.push(startPlatform);
+}
+
+createStartPlatform();
+
+// =====================
 // PLATFORM GENERATION
 // =====================
 function getPlatformTypeByScore() {
@@ -82,7 +102,7 @@ function getPlatformTypeByScore() {
 }
 
 function generateInitialPlatforms(count) {
-    let currentY = 0;
+    let currentY = 100; // начнем чуть выше стартовой платформы
     for (let i = 0; i < count; i++) {
         const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
         const type = getPlatformTypeByScore();
@@ -90,7 +110,6 @@ function generateInitialPlatforms(count) {
         if (type === 'moving_slow') vx = Math.random() < 0.5 ? 1 : -1;
         if (type === 'moving_fast') vx = Math.random() < 0.5 ? 3 : -3;
 
-        // предмет на платформе
         const itemType = getItemForPlatform();
 
         platforms.push({
@@ -111,6 +130,8 @@ generateInitialPlatforms(20);
 // UPDATE
 // =====================
 function update(dt) {
+    const now = performance.now();
+
     player.x += inputX * 6.5;
     if (player.x < -PLAYER_SIZE) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -PLAYER_SIZE;
@@ -118,10 +139,15 @@ function update(dt) {
     player.vy += GRAVITY;
     player.y += player.vy;
 
-    platforms.forEach(p => {
+    platforms.forEach((p, index) => {
+        // удаляем временную платформу, если время вышло
+        if (p.temp && now - p.spawnTime > p.lifeTime) {
+            platforms.splice(index, 1);
+            return;
+        }
+
         // коллизия с платформой
-        if (player.vy < 0 &&
-            player.y <= p.y + PLATFORM_HEIGHT &&
+        if (player.vy < 0 &&player.y <= p.y + PLATFORM_HEIGHT &&
             player.y >= p.y &&
             player.x + PLAYER_SIZE > p.x &&
             player.x < p.x + PLATFORM_WIDTH) {
@@ -135,11 +161,11 @@ function update(dt) {
             // проверка предмета
             if (p.item) {
                 switch (p.item) {
-                    case 'trampoline': player.vy += 5; break; // маленький буст
-                    case 'drone': player.vy += 35; break;      // сильнее
-                    case 'rocket': player.vy += 75; break;    // сильный буст
+                    case 'trampoline': player.vy += 5; break;
+                    case 'drone': player.vy += 35; break;
+                    case 'rocket': player.vy += 75; break;
                 }
-                p.item = null; // забрали предмет
+                p.item = null;
             }
         }
 
@@ -220,11 +246,10 @@ function draw() {
         }
     });
 
+    // HUD
     ctx.fillStyle = '#fff';
     ctx.font = '20px Arial';
     ctx.fillText(`Score: ${score}`, 20, 30);
-    ctx.fillStyle = '#fff';
-    ctx.font = '20px Arial';
     ctx.fillText(`HP: ${player.hp}`, canvas.width - 100, 30);
 }
 
