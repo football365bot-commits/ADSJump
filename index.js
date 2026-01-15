@@ -142,7 +142,8 @@ function update(dt) {
             }
         }
 
-        // движение платформif (p.type === 'moving_slow' || p.type === 'moving_fast') {
+        // движение платформ
+        if (p.type === 'moving_slow' || p.type === 'moving_fast') {
             p.x += p.vx;
             if (p.x < 0 || p.x + PLATFORM_WIDTH > canvas.width) p.vx *= -1;
         }
