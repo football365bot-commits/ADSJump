@@ -14,10 +14,10 @@ window.addEventListener('resize', resize);
 const GRAVITY = -0.6;
 const BASE_JUMP_FORCE = 15;
 const PLAYER_SIZE = 50;
-const PLATFORM_WIDTH = 150;
+const PLATFORM_WIDTH = 120;
 const PLATFORM_HEIGHT = 20;
-const MIN_GAP = 150;
-const MAX_GAP = 220;
+const MIN_GAP = 100;
+const MAX_GAP = 160;
 
 // =====================
 // GAME STATE
@@ -78,7 +78,7 @@ function createPlatforms() {
         const p = {
             x: Math.random() * (canvas.width - PLATFORM_WIDTH),
             y: currentY,
-            type: Math.random() < 0.15 ? 'broken' : 'normal',
+            type: Math.random() < 0.25 ? 'broken' : 'normal',
             used: false,
             vx: 0
         };
@@ -156,7 +156,9 @@ function update(dt) {
             p.x += p.vx;
             if (p.x < 0 || p.x + PLATFORM_WIDTH > canvas.width) p.vx *= -1;
         }
-    });// коллизия с платформами
+    });
+
+    // коллизия с платформами
     platforms.forEach(p => {
         if (player.vy < 0 &&
             player.y <= p.y + PLATFORM_HEIGHT &&
@@ -275,7 +277,9 @@ function update(dt) {
         }
     });
 
-    bullets.filter(b => b.y < canvas.height + 100);// game over
+    bullets.filter(b => b.y < canvas.height + 100);
+
+    // game over
     if (player.y < -200) location.reload();
 }
 
@@ -322,8 +326,8 @@ function draw() {
     // score & energy
     ctx.fillStyle = '#fff';
     ctx.font = '20px Arial';
-    ctx.fillText(Score: ${score}, 20, 30);
-    ctx.fillText(Energy: ${playerEnergyCount}, 20, 60);
+    ctx.fillText(`Score: ${score}`, 20, 30);
+    ctx.fillText(`Energy: ${playerEnergyCount}`, 20, 60);
 }
 
 // =====================
