@@ -16,7 +16,8 @@ const BASE_JUMP_FORCE = 15;
 const PLAYER_SIZE = 50;
 const PLATFORM_WIDTH = 120;
 const PLATFORM_HEIGHT = 20;
-const PLATFORM_GAP = 120;
+const MIN_GAP = 100;
+const MAX_GAP = 160;
 
 // =====================
 // GAME STATE
@@ -34,16 +35,23 @@ const player = {
     jumpForce: BASE_JUMP_FORCE
 };
 
+// стартовый запас энергетиков
+let playerEnergyCount = 3;
+
 // =====================
 // INPUT (TOUCH)
 // =====================
 let inputX = 0;
 
 canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
     const x = e.touches[0].clientX;
     inputX = x < canvas.width / 2 ? -1 : 1;
 });
-canvas.addEventListener('touchend', () => inputX = 0);
+canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    inputX = 0;
+});
 
 // =====================
 // PLATFORMS + ITEMS
@@ -53,10 +61,8 @@ const items = [];
 
 function spawnItem(platform) {
     if (Math.random() > 0.3) return;
-
-    const types = ['batut', 'drone', 'rocket', 'energy', 'adrenaline'];
+    const types = ['batut', 'drone', 'rocket', 'adrenaline']; // энергетик не спаунится
     const type = types[Math.floor(Math.random() * types.length)];
-
     items.push({
         type,
         x: platform.x + PLATFORM_WIDTH / 2 - 10,
@@ -65,16 +71,26 @@ function spawnItem(platform) {
     });
 }
 
+// создаём начальные платформы с равномерным вертикальным распределением
 function createPlatforms() {
-    for (let i = 0; i < 10; i++) {
+    let currentY = 0;
+    while (currentY < canvas.height * 2) {
+        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
         const p = {
             x: Math.random() * (canvas.width - PLATFORM_WIDTH),
-            y: i * PLATFORM_GAP,
+            y: currentY,
             type: Math.random() < 0.25 ? 'broken' : 'normal',
-            used: false
+            used: false,
+            vx: 0
         };
+        // небольшой шанс сделать движущуюся платформу
+        if (Math.random() < 0.15) {
+            p.type = 'moving';
+            p.vx = Math.random() < 0.5 ? 1 : -1;
+        }
         platforms.push(p);
         spawnItem(p);
+        currentY += gap;
     }
 }
 createPlatforms();
@@ -82,64 +98,68 @@ createPlatforms();
 // =====================
 // EFFECTS
 // =====================
-let activeBoost = 0;
 let boostTimer = 0;
+
+// =====================
+// BULLETS
+// =====================
+const bullets = [];
 
 // =====================
 // ENEMIES
 // =====================
 const enemies = [];
-function spawnEnemy() {
-    enemies.push({
-        x: Math.random() * (canvas.width - 40),
-        y: player.y + canvas.height + Math.random() * 300,
-        size: 40,
-        vy: 0,
-        alive: true
-    });
+const enemyTypes = [
+    { type: 'small', size: 30, hp: 1 },
+    { type: 'medium', size: 50, hp: 3 },
+    { type: 'large', size: 70, hp: 5 }
+];
+
+// =====================
+// HELPER FUNCTIONS
+// =====================
+function useEnergy() {
+    if (playerEnergyCount > 0) {
+        player.vy = 28; // мощный мгновенный буст
+        playerEnergyCount--;
+    }
 }
-// создаём несколько врагов при старте
-for (let i = 0; i < 5; i++) spawnEnemy();
 
-// =====================
-// AUTO SHOOT
-// =====================
-const bullets = [];
-setInterval(() => {
-    // автострельба только если есть видимые враги
-    const visibleEnemies = enemies.filter(e => e.alive && e.y > player.y - canvas.height && e.y < player.y + canvas.height);
-    if (visibleEnemies.length === 0) return; // нет врагов → не стрелять
-
-    bullets.push({
-        x: player.x + PLAYER_SIZE / 2 - 2,
-        y: player.y,
-        vy: 10
-    });
-}, 400);
+function collision(a, b) {
+    return a.x < b.x + b.size &&
+           a.x + 4 > b.x &&
+           a.y < b.y + b.size &&
+           a.y + 10 > b.y;
+}
 
 // =====================
 // UPDATE
 // =====================
 function update(dt) {
-
-    // horizontal
+    // горизонтальное движение
     player.x += inputX * 6;
     if (player.x < -PLAYER_SIZE) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -PLAYER_SIZE;
 
-    // effects timer
+    // таймер буста
     if (boostTimer > 0) {
         boostTimer -= dt;
-        if (boostTimer <= 0) {
-            player.jumpForce = BASE_JUMP_FORCE;
-        }
+        if (boostTimer <= 0) player.jumpForce = BASE_JUMP_FORCE;
     }
 
-    // gravity
+    // гравитация
     player.vy += GRAVITY;
     player.y += player.vy;
 
-    // platform collision
+    // движение платформ
+    platforms.forEach(p => {
+        if (p.type === 'moving') {
+            p.x += p.vx;
+            if (p.x < 0 || p.x + PLATFORM_WIDTH > canvas.width) p.vx *= -1;
+        }
+    });
+
+    // коллизия с платформами
     platforms.forEach(p => {
         if (
             player.vy < 0 &&
@@ -149,16 +169,14 @@ function update(dt) {
             player.x < p.x + PLATFORM_WIDTH
         ) {
             if (p.type === 'broken' && p.used) return;
-
             player.vy = player.jumpForce;
             if (p.type === 'broken') p.used = true;
         }
     });
 
-    // item collision
+    // коллизия с предметами
     items.forEach(item => {
         if (!item.active) return;
-
         if (
             player.x < item.x + 20 &&
             player.x + PLAYER_SIZE > item.x &&
@@ -166,44 +184,55 @@ function update(dt) {
             player.y + PLAYER_SIZE > item.y
         ) {
             item.active = false;
-
-            if (item.type === 'batut') {
-                player.vy = 18;}
-            if (item.type === 'drone') {
-                player.vy = 22;
-            }
-            if (item.type === 'rocket') {
-                player.vy = 30;
-            }
-            if (item.type === 'energy') {
-                player.vy = 18;
-            }
-            if (item.type === 'adrenaline') {
-                player.jumpForce = 18;
-                boostTimer = 3000;
+            switch (item.type) {
+                case 'batut': player.vy = 18; break;
+                case 'drone': player.vy = 22; break;
+                case 'rocket': player.vy = 30; break;
+                case 'adrenaline':
+                    player.jumpForce = 18;
+                    boostTimer = 3000;
+                    break;
             }
         }
     });
 
-    // bullets move + collision с врагами
+    // спаун врагов постепенно
+    const enemySpawnChance = Math.min(0.01 + score / 50000, 0.05);
+    if (Math.random() < enemySpawnChance) {
+        const eType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+        enemies.push({
+            type: eType.type,
+            x: Math.random() * (canvas.width - eType.size),
+            y: player.y + canvas.height + Math.random() * 300,
+            size: eType.size,
+            hp: eType.hp,
+            alive: true
+        });
+    }
+
+    // автострельба только если видимые враги есть
+    const visibleEnemies = enemies.filter(e => e.alive && e.y > player.y - canvas.height && e.y < player.y + canvas.height);
+    if (visibleEnemies.length > 0 && lastTime % 400 < dt) {
+        bullets.push({ x: player.x + PLAYER_SIZE / 2 - 2, y: player.y, vy: 10 });
+    }
+
+    // движение пуль
     bullets.forEach(b => b.y += b.vy);
+
+    // коллизия пуль с врагами
     bullets.forEach(b => {
-        enemies.forEach(e => {
+        visibleEnemies.forEach(e => {
             if (!e.alive) return;
-            if (
-                b.x < e.x + e.size &&
-                b.x + 4 > e.x &&
-                b.y < e.y + e.size &&
-                b.y + 10 > e.y
-            ) {
-                e.alive = false;
-                b.y = canvas.height + 100; // удаляем пулю
-                score += 50; // очки за врага
+            if (collision(b, e)) {
+                e.hp--;
+                b.y = canvas.height + 100;
+                if (e.hp <= 0) e.alive = false;
+                score += 50;
             }
         });
     });
 
-    // camera
+    // камера (подъём игрока)
     if (player.y > canvas.height / 2) {
         const delta = player.y - canvas.height / 2;
         player.y = canvas.height / 2;
@@ -214,19 +243,28 @@ function update(dt) {
         score += Math.floor(delta);
     }
 
-    // recycle platforms
+    // recycle платформ
     platforms.forEach((p, i) => {
         if (p.y < -PLATFORM_HEIGHT) {
+            const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
             const np = {
                 x: Math.random() * (canvas.width - PLATFORM_WIDTH),
-                y: canvas.height + Math.random() * 100,
-                type: Math.random() < Math.min(0.4, score / 5000) ? 'broken' : 'normal',
-                used: false
+                y: canvas.height + gap,
+                type: Math.random() < 0.25 ? 'broken' : 'normal',
+                used: false,
+                vx: 0
             };
+            if (Math.random() < 0.15) {
+                np.type = 'moving';
+                np.vx = Math.random() < 0.5 ? 1 : -1;
+            }
             platforms[i] = np;
             spawnItem(np);
         }
     });
+
+    // удаление пуль вне экрана
+    bullets.filter(b => b.y < canvas.height + 100);
 
     // game over
     if (player.y < -200) location.reload();
@@ -237,7 +275,6 @@ function update(dt) {
 // =====================
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -248,40 +285,36 @@ function draw() {
     // platforms
     platforms.forEach(p => {
         if (p.type === 'broken' && p.used) return;
-        ctx.fillStyle = p.type === 'broken' ? '#ff4444' : '#00ff88';
+        ctx.fillStyle = p.type === 'broken' ? '#ff4444' :
+                        p.type === 'moving' ? '#00ffff' : '#00ff88';
         ctx.fillRect(p.x, canvas.height - p.y, PLATFORM_WIDTH, PLATFORM_HEIGHT);
     });
 
     // items
     items.forEach(i => {
         if (!i.active) return;
-        const colors = {
-            batut: 'purple',
-            drone: 'cyan',
-            rocket: 'orange',
-            energy: 'lime',
-            adrenaline: 'pink'
-        };
+        const colors = { batut: 'purple', drone: 'cyan', rocket: 'orange', adrenaline: 'pink' };
         ctx.fillStyle = colors[i.type];
         ctx.fillRect(i.x, canvas.height - i.y, 20, 20);
     });
 
+    // bullets
+    ctx.fillStyle = 'white';
+    bullets.forEach(b => ctx.fillRect(b.x, canvas.height - b.y, 4, 10));
+
     // enemies
-    ctx.fillStyle = 'red';
     enemies.forEach(e => {
         if (!e.alive) return;
+        const colors = { small: '#f00', medium: '#ff8800', large: '#ff00ff' };
+        ctx.fillStyle = colors[e.type];
         ctx.fillRect(e.x, canvas.height - e.y, e.size, e.size);
     });
 
-    // bullets
-    ctx.fillStyle = 'white';
-    bullets.forEach(b => {
-        ctx.fillRect(b.x, canvas.height - b.y, 4, 10);
-    });
-
-    // score
+    // score & energy
     ctx.fillStyle = '#fff';
+    ctx.font = '20px Arial';
     ctx.fillText(`Score: ${score}`, 20, 30);
+    ctx.fillText(`Energy: ${playerEnergyCount}`, 20, 60);
 }
 
 // =====================
@@ -295,3 +328,10 @@ function gameLoop(t) {
     requestAnimationFrame(gameLoop);
 }
 requestAnimationFrame(gameLoop);
+
+// =====================
+// ENERGY BUTTON (для теста, можно привязать к UI)
+// =====================
+document.addEventListener('keydown', e => {
+    if (e.code === 'Space') useEnergy();
+});
