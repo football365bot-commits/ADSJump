@@ -285,6 +285,105 @@ function draw() {
     ctx.font = '20px Arial';
     ctx.fillText(`HP: ${player.hp}`, canvas.width - 100, 30);
 }
+// =====================
+// ENEMIES & BULLETS
+// =====================
+const enemies = [];
+const bullets = [];
+
+function spawnEnemy(x, y) {
+    enemies.push({
+        x: x,
+        y: y,
+        width: 40,
+        height: 40,
+        hp: 10,
+        vx: 0,
+        vy: 0
+    });
+}
+
+function fireBullet(from, target, speed = 8) {
+    const dx = target.x + target.width/2 - (from.x + PLAYER_SIZE/2);
+    const dy = target.y + target.height/2 - (from.y + PLAYER_SIZE/2);
+    const len = Math.sqrt(dx*dx + dy*dy);
+    bullets.push({
+        x: from.x + PLAYER_SIZE/2,
+        y: from.y + PLAYER_SIZE/2,
+        vx: (dx / len) * speed,
+        vy: (dy / len) * speed,
+        fromPlayer: from === player
+    });
+}
+
+// =====================
+// UPDATE BULLETS & ENEMIES
+// =====================
+function updateBullets() {
+    bullets.forEach((b, i) => {
+        b.x += b.vx;
+        b.y += b.vy;
+
+        // проверка попадания
+        if (b.fromPlayer) {
+            enemies.forEach((e, ei) => {
+                if (b.x > e.x && b.x < e.x + e.width &&
+                    b.y > e.y && b.y < e.y + e.height) {
+                    e.hp -= 1;
+                    bullets.splice(i, 1);
+                }
+            });
+        } else {
+            // пули врага по игроку
+            if (b.x > player.x && b.x < player.x + PLAYER_SIZE &&
+                b.y > player.y && b.y < player.y + PLAYER_SIZE) {
+                player.hp -= 1;
+                bullets.splice(i, 1);
+            }
+        }
+
+        // удаляем за пределами экрана
+        if (b.x < 0  b.x > canvas.width  b.y < 0 || b.y > canvas.height) bullets.splice(i, 1);
+    });
+
+    // удаляем мертвых врагов
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        if (enemies[i].hp <= 0) enemies.splice(i, 1);
+    }
+}
+
+// =====================
+// AUTO FIRE LOGIC
+// =====================
+function autoFire() {
+    if (enemies.length > 0) {
+        // игрок стреляет по ближайшему врагу
+        let nearest = enemies.reduce((prev, curr) => {
+            const dPrev = Math.hypot(player.x - prev.x, player.y - prev.y);
+            const dCurr = Math.hypot(player.x - curr.x, player.y - curr.y);
+            return dPrev < dCurr ? prev : curr;
+        });
+        fireBullet(player, nearest);
+
+        // враги стреляют по игроку
+        enemies.forEach(e => fireBullet(e, player, 5));
+    }
+}
+
+// =====================
+// DRAW ENEMIES & BULLETS
+// =====================
+function drawEnemies() {
+    enemies.forEach(e => {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(e.x, canvas.height - e.y, e.width, e.height);
+    });
+
+    bullets.forEach(b => {
+        ctx.fillStyle = b.fromPlayer ? 'yellow' : 'orange';
+        ctx.fillRect(b.x - 5, canvas.height - b.y - 5, 10, 10);
+    });
+}
 
 // =====================
 // GAME LOOP
@@ -295,5 +394,8 @@ function gameLoop(t) {
     update(dt);
     draw();
     requestAnimationFrame(gameLoop);
+    updateBullets();
+    autoFire();
+    drawEnemies();
 }
 requestAnimationFrame(gameLoop);
