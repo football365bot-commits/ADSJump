@@ -58,9 +58,9 @@ const itemTypes = ['trampoline', 'drone', 'rocket'];
 
 function getItemForPlatform() {
     const rand = Math.random();
-    if (rand < 0.01) return 'rocket';        // редкий
-    if (rand < 0.05) return 'drone';         // чуть чаще
-    if (rand < 0.10) return 'trampoline';    // чаще
+    if (rand < 0.005) return 'rocket';        // редкий
+    if (rand < 0.015) return 'drone';         // чуть чаще
+    if (rand < 0.030) return 'trampoline';    // чаще
     return null;                              // на многих платформах нет предмета
 }
 
@@ -135,8 +135,8 @@ function update(dt) {
             if (p.item) {
                 switch (p.item) {
                     case 'trampoline': player.vy += 5; break; // маленький буст
-                    case 'drone': player.vy += 25; break;      // сильнее
-                    case 'rocket': player.vy += 50; break;    // сильный буст
+                    case 'drone': player.vy += 35; break;      // сильнее
+                    case 'rocket': player.vy += 75; break;    // сильный буст
                 }
                 p.item = null; // забрали предмет
             }
