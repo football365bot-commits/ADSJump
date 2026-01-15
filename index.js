@@ -177,12 +177,24 @@ function update(dt) {
             }
         }
 
-        // движение платформ
-        if (p.type === 'moving_slow' || p.type === 'moving_fast') {
+        // движение платформ    
+        // движение платформ с динамическим ускорением
+        if (p.type === 'moving_slow') {
+            let speed = 1 + score * 0.00005; // базовая + ускорение
+            if (speed > 3) speed = 3;        // максимальная скорость
+            p.vx = Math.sign(p.vx) * speed;  // сохраняем направление
             p.x += p.vx;
-            if (p.x < 0 || p.x + PLATFORM_WIDTH > canvas.width) p.vx *= -1;
+        } else if (p.type === 'moving_fast') {
+            let speed = 3 + score * 0.0001;  // базовая + ускорение
+            if (speed > 8) speed = 8;        // максимальная скорость
+            p.vx = Math.sign(p.vx) * speed;
+            p.x += p.vx;
         }
-    });
+
+        // отражение от краёв
+        if (p.x < 0) p.vx = Math.abs(p.vx);
+        if (p.x + PLATFORM_WIDTH > canvas.width) p.vx = -Math.abs(p.vx);
+        
 
     // камера
     if (player.y > canvas.height / 2) {
