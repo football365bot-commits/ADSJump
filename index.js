@@ -35,11 +35,10 @@ const player = {
     jumpForce: BASE_JUMP_FORCE
 };
 
-// стартовый запас энергетиков
-let playerEnergyCount = 3;
+let playerEnergyCount = 3; // стартовый запас энергетиков
 
 // =====================
-// INPUT (TOUCH)
+// INPUT
 // =====================
 let inputX = 0;
 
@@ -54,14 +53,14 @@ canvas.addEventListener('touchend', e => {
 });
 
 // =====================
-// PLATFORMS + ITEMS
+// PLATFORMS & ITEMS
 // =====================
 const platforms = [];
 const items = [];
 
 function spawnItem(platform) {
     if (Math.random() > 0.3) return;
-    const types = ['batut', 'drone', 'rocket', 'adrenaline']; // энергетик не спаунится
+    const types = ['batut', 'drone', 'rocket', 'adrenaline'];
     const type = types[Math.floor(Math.random() * types.length)];
     items.push({
         type,
@@ -71,7 +70,7 @@ function spawnItem(platform) {
     });
 }
 
-// создаём начальные платформы с равномерным вертикальным распределением
+// создаем платформы равномерно по вертикали
 function createPlatforms() {
     let currentY = 0;
     while (currentY < canvas.height * 2) {
@@ -83,7 +82,7 @@ function createPlatforms() {
             used: false,
             vx: 0
         };
-        // небольшой шанс сделать движущуюся платформу
+        // шанс на движущуюся платформу
         if (Math.random() < 0.15) {
             p.type = 'moving';
             p.vx = Math.random() < 0.5 ? 1 : -1;
@@ -116,11 +115,11 @@ const enemyTypes = [
 ];
 
 // =====================
-// HELPER FUNCTIONS
+// HELPER
 // =====================
 function useEnergy() {
     if (playerEnergyCount > 0) {
-        player.vy = 28; // мощный мгновенный буст
+        player.vy = 28; // мгновенный буст
         playerEnergyCount--;
     }
 }
@@ -161,8 +160,7 @@ function update(dt) {
 
     // коллизия с платформами
     platforms.forEach(p => {
-        if (
-            player.vy < 0 &&
+        if (player.vy < 0 &&
             player.y <= p.y + PLATFORM_HEIGHT &&
             player.y >= p.y &&
             player.x + PLAYER_SIZE > p.x &&
@@ -177,12 +175,10 @@ function update(dt) {
     // коллизия с предметами
     items.forEach(item => {
         if (!item.active) return;
-        if (
-            player.x < item.x + 20 &&
+        if (player.x < item.x + 20 &&
             player.x + PLAYER_SIZE > item.x &&
             player.y < item.y + 20 &&
-            player.y + PLAYER_SIZE > item.y
-        ) {
+            player.y + PLAYER_SIZE > item.y) {
             item.active = false;
             switch (item.type) {
                 case 'batut': player.vy = 18; break;
@@ -196,28 +192,46 @@ function update(dt) {
         }
     });
 
-    // спаун врагов постепенно
-    const enemySpawnChance = Math.min(0.01 + score / 50000, 0.05);
+    // спавн врагов постепенно
+    const baseSpawnChance = 0.005;
+    const maxSpawnChance = 0.02;
+    const enemySpawnChance = Math.min(baseSpawnChance + score / 100000, maxSpawnChance);
     if (Math.random() < enemySpawnChance) {
         const eType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
-        enemies.push({
-            type: eType.type,
-            x: Math.random() * (canvas.width - eType.size),
-            y: player.y + canvas.height + Math.random() * 300,
-            size: eType.size,
-            hp: eType.hp,
-            alive: true
+        const safeY = player.y + canvas.height + 100;
+        if (!enemies.some(e => Math.abs(e.y - safeY) < 100)) {
+            enemies.push({
+                type: eType.type,
+                x: Math.random() * (canvas.width - eType.size),
+                y: safeY,
+                size: eType.size,
+                hp: eType.hp,
+                alive: true
+            });
+        }
+    }
+
+    // автострельба с прицелом на ближайшего врага
+    const visibleEnemies = enemies.filter(e => e.alive && e.y < player.y + canvas.height && e.y > player.y - canvas.height);
+    if (visibleEnemies.length > 0 && lastTime % 200 < dt) {
+        // выбираем ближайшего врага
+        let nearest = visibleEnemies.reduce((prev, curr) => Math.abs(curr.y - player.y) < Math.abs(prev.y - player.y) ? curr : prev);
+        const bulletX = player.x + PLAYER_SIZE / 2 - 2;
+        const bulletY = player.y;
+        const targetX = nearest.x + nearest.size / 2;
+        bullets.push({
+            x: bulletX,
+            y: bulletY,
+            vx: (targetX - bulletX) / 30,
+            vy: 10
         });
     }
 
-    // автострельба только если видимые враги есть
-    const visibleEnemies = enemies.filter(e => e.alive && e.y > player.y - canvas.height && e.y < player.y + canvas.height);
-    if (visibleEnemies.length > 0 && lastTime % 400 < dt) {
-        bullets.push({ x: player.x + PLAYER_SIZE / 2 - 2, y: player.y, vy: 10 });
-    }
-
     // движение пуль
-    bullets.forEach(b => b.y += b.vy);
+    bullets.forEach(b => {
+        b.y += b.vy;
+        b.x += b.vx;
+    });
 
     // коллизия пуль с врагами
     bullets.forEach(b => {
@@ -232,7 +246,7 @@ function update(dt) {
         });
     });
 
-    // камера (подъём игрока)
+    // камера
     if (player.y > canvas.height / 2) {
         const delta = player.y - canvas.height / 2;
         player.y = canvas.height / 2;
@@ -250,11 +264,11 @@ function update(dt) {
             const np = {
                 x: Math.random() * (canvas.width - PLATFORM_WIDTH),
                 y: canvas.height + gap,
-                type: Math.random() < 0.25 ? 'broken' : 'normal',
+                type: Math.random() < Math.min(0.25 + score / 5000, 0.5) ? 'broken' : 'normal',
                 used: false,
                 vx: 0
             };
-            if (Math.random() < 0.15) {
+            if (Math.random() < Math.min(0.15 + score / 10000, 0.3)) {
                 np.type = 'moving';
                 np.vx = Math.random() < 0.5 ? 1 : -1;
             }
@@ -263,7 +277,6 @@ function update(dt) {
         }
     });
 
-    // удаление пуль вне экрана
     bullets.filter(b => b.y < canvas.height + 100);
 
     // game over
@@ -330,7 +343,7 @@ function gameLoop(t) {
 requestAnimationFrame(gameLoop);
 
 // =====================
-// ENERGY BUTTON (для теста, можно привязать к UI)
+// USE ENERGY
 // =====================
 document.addEventListener('keydown', e => {
     if (e.code === 'Space') useEnergy();
