@@ -55,14 +55,16 @@ const platforms = [];
 // =====================
 // ITEMS
 // =====================
-const itemTypes = ['trampoline', 'drone', 'rocket'];
+const itemTypes = ['trampoline', 'drone', 'rocket', 'spikes', 'bomb'];
 
 function getItemForPlatform() {
     const rand = Math.random();
-    if (rand < 0.005) return 'rocket';        // редкий
-    if (rand < 0.015) return 'drone';         // чуть чаще
-    if (rand < 0.030) return 'trampoline';    // чаще
-    return null;                              // на многих платформах нет предмета
+    if (rand < 0.003) return 'rocket';      // редкий
+    if (rand < 0.008) return 'drone';       // чуть чаще
+    if (rand < 0.020) return 'trampoline';  // чаще
+    if (rand < 0.025) return 'bomb';        // редкий
+    if (rand < 0.040) return 'spikes';      // чуть чаще
+    return null;                             // на многих платформах нет предмета
 }
 
 // =====================
@@ -71,14 +73,14 @@ function getItemForPlatform() {
 function createStartPlatform() {
     const startPlatform = {
         x: canvas.width / 2 - PLATFORM_WIDTH / 2,
-        y: 50, // чуть выше низа экрана
+        y: 50,
         type: 'normal',
         vx: 0,
         used: false,
         item: null,
-        temp: true, // временная платформа
-        lifeTime: 2000, // 2 секунды
-        spawnTime: performance.now() // момент появления
+        temp: true,
+        lifeTime: 2000,
+        spawnTime: performance.now()
     };
     platforms.push(startPlatform);
 }
@@ -102,7 +104,7 @@ function getPlatformTypeByScore() {
 }
 
 function generateInitialPlatforms(count) {
-    let currentY = 100; // начнем чуть выше стартовой платформы
+    let currentY = 100; 
     for (let i = 0; i < count; i++) {
         const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
         const type = getPlatformTypeByScore();
@@ -164,6 +166,8 @@ function update(dt) {
                     case 'trampoline': player.vy += 5; break;
                     case 'drone': player.vy += 35; break;
                     case 'rocket': player.vy += 75; break;
+                    case 'spikes': player.hp -= 1; break;
+                    case 'bomb': player.hp -= 5; break;
                 }
                 p.item = null;
             }
@@ -207,7 +211,7 @@ function update(dt) {
         }
     });
 
-    if (player.y < -200) location.reload();
+    if (player.y < -200 || player.hp <= 0) location.reload();
 }
 
 // =====================
@@ -233,7 +237,7 @@ function draw() {
         }
         ctx.fillRect(p.x, canvas.height - p.y, PLATFORM_WIDTH, PLATFORM_HEIGHT);
 
-        // рисуем предмет по центру платформы
+        // предметы по центру платформы
         if (p.item) {
             const itemX = p.x + PLATFORM_WIDTH / 2 - 10;
             const itemY = canvas.height - p.y - 20;
@@ -241,6 +245,8 @@ function draw() {
                 case 'trampoline': ctx.fillStyle = '#ffff00'; break;
                 case 'drone': ctx.fillStyle = '#ff8800'; break;
                 case 'rocket': ctx.fillStyle = '#ff0000'; break;
+                case 'spikes': ctx.fillStyle = '#888888'; break;
+                case 'bomb': ctx.fillStyle = '#000000'; break;
             }
             ctx.fillRect(itemX, itemY, 20, 20);
         }
