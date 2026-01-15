@@ -18,7 +18,6 @@ const PLATFORM_WIDTH = 120;
 const PLATFORM_HEIGHT = 20;
 const MIN_GAP = 120;
 const MAX_GAP = 160;
-const MAX_JUMP_HEIGHT = 200; 
 
 // =====================
 // GAME STATE
@@ -52,20 +51,26 @@ canvas.addEventListener('touchend', e => { e.preventDefault(); inputX = 0; });
 // =====================
 const platforms = [];
 
-// =====================
-// Функция генерации платформ разного типа
-// =====================
-function generatePlatforms(count) {
+function getPlatformTypeByScore() {
+    // чем выше score, тем меньше нормальных и больше сложных
+    const normalChance = Math.max(0.6 - score / 10000, 0.2);
+    const brokenChance = Math.min(0.2 + score / 15000, 0.4);
+    const movingSlowChance = Math.min(0.1 + score / 20000, 0.2);
+    const movingFastChance = 1 - normalChance - brokenChance - movingSlowChance;
+
+    const rand = Math.random();
+    if (rand < normalChance) return 'normal';
+    if (rand < normalChance + brokenChance) return 'broken';
+    if (rand < normalChance + brokenChance + movingSlowChance) return 'moving_slow';
+    return 'moving_fast';
+}
+
+// создаём начальные платформы
+function generateInitialPlatforms(count) {
     let currentY = 0;
     for (let i = 0; i < count; i++) {
         const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
-        let type;
-        const rand = Math.random();
-        if (rand < 0.6) type = 'normal';
-        else if (rand < 0.8) type = 'broken';
-        else if (rand < 0.9) type = 'moving_slow';
-        else type = 'moving_fast';
-
+        const type = getPlatformTypeByScore();
         let vx = 0;
         if (type === 'moving_slow') vx = Math.random() < 0.5 ? 1 : -1;
         if (type === 'moving_fast') vx = Math.random() < 0.5 ? 3 : -3;
@@ -77,13 +82,11 @@ function generatePlatforms(count) {
             vx: vx,
             used: false
         });
-
         currentY += gap;
     }
 }
 
-// создаём стартовые платформы
-generatePlatforms(20);
+generateInitialPlatforms(20);
 
 // =====================
 // UPDATE
@@ -131,12 +134,7 @@ function update(dt) {
     platforms.forEach((p, i) => {
         if (p.y < -PLATFORM_HEIGHT) {
             const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
-            const rand = Math.random();
-            let type;
-            if (rand < 0.6) type = 'normal';
-            else if (rand < 0.8) type = 'broken';
-            else if (rand < 0.9) type = 'moving_slow';
-            else type = 'moving_fast';
+            const type = getPlatformTypeByScore();
             let vx = 0;
             if (type === 'moving_slow') vx = Math.random() < 0.5 ? 1 : -1;
             if (type === 'moving_fast') vx = Math.random() < 0.5 ? 3 : -3;
@@ -145,7 +143,8 @@ function update(dt) {
                 x: Math.random() * (canvas.width - PLATFORM_WIDTH),
                 y: maxY + gap,
                 type: type,
-                vx: vx,used: false
+                vx: vx,
+                used: false
             };
             maxY = platforms[i].y;
         }
@@ -168,7 +167,8 @@ function draw() {
 
     // platforms
     platforms.forEach(p => {
-        switch(p.type) {
+        if (p.type === 'broken' && p.used) return; // исчезает после прыжка
+        switch (p.type) {
             case 'normal': ctx.fillStyle = '#00ff88'; break;
             case 'broken': ctx.fillStyle = '#ff4444'; break;
             case 'moving_slow': ctx.fillStyle = '#00ffff'; break;
