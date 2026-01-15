@@ -32,7 +32,8 @@ const player = {
     x: canvas.width / 2,
     y: canvas.height / 3,
     vy: 0,
-    jumpForce: BASE_JUMP_FORCE
+    jumpForce: BASE_JUMP_FORCE,
+    hp: 100
 };
 
 // =====================
@@ -222,6 +223,9 @@ function draw() {
     ctx.fillStyle = '#fff';
     ctx.font = '20px Arial';
     ctx.fillText(`Score: ${score}`, 20, 30);
+    ctx.fillStyle = '#fff';
+    ctx.font = '20px Arial';
+    ctx.fillText(`HP: ${player.hp}`, canvas.width - 100, 30);
 }
 
 // =====================
