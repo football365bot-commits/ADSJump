@@ -14,7 +14,8 @@ window.addEventListener('resize', resize);
 const GRAVITY = -0.6;
 const BASE_JUMP_FORCE = 15;
 const PLAYER_SIZE = 50;
-const PLATFORM_WIDTH = 120;
+const MIN_PLATFORM_WIDTH = 60;
+const MAX_PLATFORM_WIDTH = 120;
 const PLATFORM_HEIGHT = 20;
 const MIN_GAP = 120;
 const MAX_GAP = 160;
@@ -49,10 +50,10 @@ canvas.addEventListener('touchend', e => { e.preventDefault(); inputX = 0; });
 // =====================
 // PLATFORMS
 // =====================
+let PLATFORM_WIDTH = MAX_PLATFORM_WIDTH;
 const platforms = [];
 
 function getPlatformTypeByScore() {
-    // чем выше score, тем меньше нормальных и больше сложных
     const normalChance = Math.max(0.6 - score / 10000, 0.2);
     const brokenChance = Math.min(0.2 + score / 15000, 0.4);
     const movingSlowChance = Math.min(0.1 + score / 20000, 0.2);
@@ -80,24 +81,29 @@ function generateInitialPlatforms(count) {
             y: currentY,
             type: type,
             vx: vx,
-            used: false
+            used: false,
+            timer: 30 // таймер для ломающихся платформ
         });
         currentY += gap;
     }
 }
-
 generateInitialPlatforms(20);
 
 // =====================
 // UPDATE
 // =====================
 function update(dt) {
+    // горизонтальное движение
     player.x += inputX * 6;
     if (player.x < -PLAYER_SIZE) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -PLAYER_SIZE;
 
+    // гравитация
     player.vy += GRAVITY;
     player.y += player.vy;
+
+    // уменьшаем ширину платформ с ростом score
+    PLATFORM_WIDTH = Math.max(MIN_PLATFORM_WIDTH, MAX_PLATFORM_WIDTH - score / 200);
 
     // коллизия с платформами
     platforms.forEach(p => {
@@ -116,8 +122,16 @@ function update(dt) {
 
         // движение платформ
         if (p.type === 'moving_slow' || p.type === 'moving_fast') {
-            p.x += p.vx;
+            const speedFactor = 1 + score / 5000; // ускорение по score
+            p.x += p.vx * speedFactor;
             if (p.x < 0 || p.x + PLATFORM_WIDTH > canvas.width) p.vx *= -1;
+        }
+    });
+
+    // таймер для ломающихся платформ
+    platforms.forEach(p => {
+        if (p.type === 'broken' && p.used) {
+            p.timer--;
         }
     });
 
@@ -127,13 +141,11 @@ function update(dt) {
         player.y = canvas.height / 2;
         platforms.forEach(p => p.y -= delta);
         score += Math.floor(delta);
-    }
-
-    // recycle платформ
+    }// recycle платформ
     let maxY = Math.max(...platforms.map(p => p.y));
     platforms.forEach((p, i) => {
-        if (p.y < -PLATFORM_HEIGHT) {
-            const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+        if (p.y < -PLATFORM_HEIGHT || (p.type === 'broken' && p.used && p.timer <= 0)) {
+            const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP) * (1 + score / 5000);
             const type = getPlatformTypeByScore();
             let vx = 0;
             if (type === 'moving_slow') vx = Math.random() < 0.5 ? 1 : -1;
@@ -144,12 +156,14 @@ function update(dt) {
                 y: maxY + gap,
                 type: type,
                 vx: vx,
-                used: false
+                used: false,
+                timer: 30
             };
             maxY = platforms[i].y;
         }
     });
 
+    // game over
     if (player.y < -200) location.reload();
 }
 
@@ -167,7 +181,7 @@ function draw() {
 
     // platforms
     platforms.forEach(p => {
-        if (p.type === 'broken' && p.used) return; // исчезает после прыжка
+        if (p.type === 'broken' && p.used && p.timer <= 0) return;
         switch (p.type) {
             case 'normal': ctx.fillStyle = '#00ff88'; break;
             case 'broken': ctx.fillStyle = '#ff4444'; break;
@@ -177,6 +191,7 @@ function draw() {
         ctx.fillRect(p.x, canvas.height - p.y, PLATFORM_WIDTH, PLATFORM_HEIGHT);
     });
 
+    // score
     ctx.fillStyle = '#fff';
     ctx.font = '20px Arial';
     ctx.fillText(`Score: ${score}`, 20, 30);
