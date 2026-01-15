@@ -86,10 +86,30 @@ let activeBoost = 0;
 let boostTimer = 0;
 
 // =====================
+// ENEMIES
+// =====================
+const enemies = [];
+function spawnEnemy() {
+    enemies.push({
+        x: Math.random() * (canvas.width - 40),
+        y: player.y + canvas.height + Math.random() * 300,
+        size: 40,
+        vy: 0,
+        alive: true
+    });
+}
+// создаём несколько врагов при старте
+for (let i = 0; i < 5; i++) spawnEnemy();
+
+// =====================
 // AUTO SHOOT
 // =====================
 const bullets = [];
 setInterval(() => {
+    // автострельба только если есть видимые враги
+    const visibleEnemies = enemies.filter(e => e.alive && e.y > player.y - canvas.height && e.y < player.y + canvas.height);
+    if (visibleEnemies.length === 0) return; // нет врагов → не стрелять
+
     bullets.push({
         x: player.x + PLAYER_SIZE / 2 - 2,
         y: player.y,
@@ -148,8 +168,7 @@ function update(dt) {
             item.active = false;
 
             if (item.type === 'batut') {
-                player.vy = 18;
-            }
+                player.vy = 18;}
             if (item.type === 'drone') {
                 player.vy = 22;
             }
@@ -166,9 +185,23 @@ function update(dt) {
         }
     });
 
-    // bullets
+    // bullets move + collision с врагами
     bullets.forEach(b => b.y += b.vy);
-    bullets.filter(b => b.y < canvas.height + 100);
+    bullets.forEach(b => {
+        enemies.forEach(e => {
+            if (!e.alive) return;
+            if (
+                b.x < e.x + e.size &&
+                b.x + 4 > e.x &&
+                b.y < e.y + e.size &&
+                b.y + 10 > e.y
+            ) {
+                e.alive = false;
+                b.y = canvas.height + 100; // удаляем пулю
+                score += 50; // очки за врага
+            }
+        });
+    });
 
     // camera
     if (player.y > canvas.height / 2) {
@@ -177,6 +210,7 @@ function update(dt) {
         platforms.forEach(p => p.y -= delta);
         items.forEach(i => i.y -= delta);
         bullets.forEach(b => b.y -= delta);
+        enemies.forEach(e => e.y -= delta);
         score += Math.floor(delta);
     }
 
@@ -230,6 +264,13 @@ function draw() {
         };
         ctx.fillStyle = colors[i.type];
         ctx.fillRect(i.x, canvas.height - i.y, 20, 20);
+    });
+
+    // enemies
+    ctx.fillStyle = 'red';
+    enemies.forEach(e => {
+        if (!e.alive) return;
+        ctx.fillRect(e.x, canvas.height - e.y, e.size, e.size);
     });
 
     // bullets
