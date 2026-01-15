@@ -18,10 +18,8 @@ const PLATFORM_WIDTH = 120;
 const PLATFORM_HEIGHT = 20;
 const MIN_GAP = 120;
 const MAX_GAP = 160;
-
-// таймеры ломающихся платформ
-const BASE_BROKEN_TIMER = 300; // базовое время до исчезновения
-const MIN_BROKEN_TIMER = 80;   // минимальное время, чтобы не исчезала мгновенно
+const BASE_BROKEN_TIMER = 300;
+const MIN_BROKEN_TIMER = 80;
 
 // =====================
 // GAME STATE
@@ -55,10 +53,12 @@ canvas.addEventListener('touchend', e => { e.preventDefault(); inputX = 0; });
 // =====================
 const platforms = [];
 
+// выбор типа платформы с адаптацией под score
 function getPlatformTypeByScore() {
-    const normalChance = Math.max(0.6 - score / 10000, 0.2);
-    const brokenChance = Math.min(0.2 + score / 15000, 0.4);
-    const movingSlowChance = Math.min(0.1 + score / 20000, 0.2);
+    // обычные платформы уменьшаются, сложные растут
+    const normalChance = Math.max(0.6 - score / 10000, 0.15); // минимум 15%
+    const brokenChance = Math.min(0.2 + score / 10000, 0.4);  // максимум 40%
+    const movingSlowChance = Math.min(0.1 + score / 15000, 0.25);
     const movingFastChance = 1 - normalChance - brokenChance - movingSlowChance;
 
     const rand = Math.random();
@@ -68,6 +68,7 @@ function getPlatformTypeByScore() {
     return 'moving_fast';
 }
 
+// создаём начальные платформы
 function generateInitialPlatforms(count) {
     let currentY = 0;
     for (let i = 0; i < count; i++) {
@@ -78,9 +79,7 @@ function generateInitialPlatforms(count) {
         if (type === 'moving_fast') vx = Math.random() < 0.5 ? 3 : -3;
 
         let timer = 0;
-        if (type === 'broken') {
-            timer = Math.max(BASE_BROKEN_TIMER - score / 100, MIN_BROKEN_TIMER);
-        }
+        if (type === 'broken') timer = Math.max(BASE_BROKEN_TIMER - score / 100, MIN_BROKEN_TIMER);
 
         platforms.push({
             x: Math.random() * (canvas.width - PLATFORM_WIDTH),
@@ -94,7 +93,8 @@ function generateInitialPlatforms(count) {
     }
 }
 
-generateInitialPlatforms(20);
+// стартовые платформы
+generateInitialPlatforms(15);
 
 // =====================
 // UPDATE
@@ -107,7 +107,7 @@ function update(dt) {
     player.vy += GRAVITY;
     player.y += player.vy;
 
-    // коллизия с платформами
+    // коллизия и движение платформ
     platforms.forEach(p => {
         if (player.vy < 0 &&
             player.y <= p.y + PLATFORM_HEIGHT &&
@@ -122,16 +122,14 @@ function update(dt) {
             if (p.type === 'broken') p.used = true;
         }
 
-        // движение платформ
         if (p.type === 'moving_slow' || p.type === 'moving_fast') {
-            p.x += p.vx;
+            p.x += p.vx + score / 2000; // скорость растёт с score
             if (p.x < 0 || p.x + PLATFORM_WIDTH > canvas.width) p.vx *= -1;
         }
 
-        // таймер ломающейся платформы
         if (p.type === 'broken' && !p.used) {
-            p.timer -= dt / 16; // корректируем по fps
-            if (p.timer <= 0) p.used = true; // исчезает
+            p.timer -= dt / 16;
+            if (p.timer <= 0) p.used = true;
         }
     });
 
@@ -152,11 +150,8 @@ function update(dt) {
             let vx = 0;
             if (type === 'moving_slow') vx = Math.random() < 0.5 ? 1 : -1;
             if (type === 'moving_fast') vx = Math.random() < 0.5 ? 3 : -3;
-
             let timer = 0;
-            if (type === 'broken') {
-                timer = Math.max(BASE_BROKEN_TIMER - score / 100, MIN_BROKEN_TIMER);
-            }
+            if (type === 'broken') timer = Math.max(BASE_BROKEN_TIMER - score / 100, MIN_BROKEN_TIMER);
 
             platforms[i] = {
                 x: Math.random() * (canvas.width - PLATFORM_WIDTH),
@@ -182,13 +177,11 @@ function draw() {
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // player
     ctx.fillStyle = 'yellow';
     ctx.fillRect(player.x, canvas.height - player.y, PLAYER_SIZE, PLAYER_SIZE);
 
-    // platforms
     platforms.forEach(p => {
-        if (p.type === 'broken' && p.used) return; // исчезает
+        if (p.type === 'broken' && p.used) return;
         switch (p.type) {
             case 'normal': ctx.fillStyle = '#00ff88'; break;
             case 'broken': ctx.fillStyle = '#ff4444'; break;
