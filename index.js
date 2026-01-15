@@ -11,8 +11,8 @@ window.addEventListener('resize', resize);
 // =====================
 // CONFIG
 // =====================
-const GRAVITY = -0.6;
-const BASE_JUMP_FORCE = 15;
+const GRAVITY = -0.9;
+const BASE_JUMP_FORCE = 22.5;
 const PLAYER_SIZE = 50;
 const PLATFORM_WIDTH = 80;
 const PLATFORM_HEIGHT = 18;
@@ -136,7 +136,7 @@ generateInitialPlatforms(20);
 function update(dt) {
     const now = performance.now();
 
-    player.x += inputX * 6.5;
+    player.x += inputX * 7;
     if (player.x < -PLAYER_SIZE) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -PLAYER_SIZE;
 
