@@ -16,8 +16,9 @@ const BASE_JUMP_FORCE = 15;
 const PLAYER_SIZE = 50;
 const PLATFORM_WIDTH = 120;
 const PLATFORM_HEIGHT = 20;
-const MIN_GAP = 100;
+const MIN_GAP = 120;
 const MAX_GAP = 160;
+const MAX_JUMP_HEIGHT = 200; // максимальная высота, которую игрок может допрыгнуть
 
 // =====================
 // GAME STATE
@@ -51,29 +52,43 @@ canvas.addEventListener('touchend', e => { e.preventDefault(); inputX = 0; });
 // =====================
 const platforms = [];
 
-function createPlatforms() {
-    let currentY = 0;
-    while(currentY < canvas.height * 2) {
+// создаём начальные платформы
+function createInitialPlatforms() {
+    let y = 0;
+    while (y < canvas.height * 2) {
         const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
-        const p = {
+        platforms.push({
             x: Math.random() * (canvas.width - PLATFORM_WIDTH),
-            y: currentY,
+            y: y,
             type: 'normal'
-        };
-        platforms.push(p);
-        currentY += gap;
+        });
+        y += gap;
     }
 }
-createPlatforms();
+createInitialPlatforms();
+
+// функция генерации новой платформы над экраном
+function generatePlatformAbove(lastY) {
+    // сложность растёт с score: gap увеличивается, платформ меньше
+    const difficultyFactor = Math.min(0.5, score / 5000); // до 50% увеличения gap
+    const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP) * (1 + difficultyFactor);
+    const newY = lastY + gap;
+
+    return {
+        x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+        y: newY,
+        type: 'normal'
+    };
+}
 
 // =====================
 // UPDATE
 // =====================
 function update(dt) {
-    // движение игрока
+    // горизонтальное движение
     player.x += inputX * 6;
-    if(player.x < -PLAYER_SIZE) player.x = canvas.width;
-    if(player.x > canvas.width) player.x = -PLAYER_SIZE;
+    if (player.x < -PLAYER_SIZE) player.x = canvas.width;
+    if (player.x > canvas.width) player.x = -PLAYER_SIZE;
 
     // гравитация
     player.vy += GRAVITY;
@@ -81,70 +96,66 @@ function update(dt) {
 
     // коллизия с платформами
     platforms.forEach(p => {
-        if(player.vy < 0 &&
-           player.y <= p.y + PLATFORM_HEIGHT &&
-           player.y >= p.y &&
-           player.x + PLAYER_SIZE > p.x &&
-           player.x < p.x + PLATFORM_WIDTH) {
+        if (player.vy < 0 &&
+            player.y <= p.y + PLATFORM_HEIGHT &&
+            player.y >= p.y &&
+            player.x + PLAYER_SIZE > p.x &&
+            player.x < p.x + PLATFORM_WIDTH) {
             player.vy = player.jumpForce;
         }
     });
 
     // камера
-    if(player.y > canvas.height / 2) {
+    if (player.y > canvas.height / 2) {
         const delta = player.y - canvas.height / 2;
         player.y = canvas.height / 2;
         platforms.forEach(p => p.y -= delta);
         score += Math.floor(delta);
     }
 
-    // recycle платформ
-    platforms.forEach((p,i)=>{
-        if(p.y < -PLATFORM_HEIGHT){
-            const gap = MIN_GAP + Math.random()*(MAX_GAP-MIN_GAP);
-            platforms[i] = {
-                x: Math.random()*(canvas.width-PLATFORM_WIDTH),
-                y: canvas.height + gap,
-                type: 'normal'
-            };
+    // recycle платформ: удаляем слишком низкие и добавляем сверху
+    let maxY = Math.max(...platforms.map(p => p.y));
+    platforms.forEach((p, i) => {
+        if (p.y < -PLATFORM_HEIGHT) {
+            platforms[i] = generatePlatformAbove(maxY);
+            maxY = platforms[i].y;
         }
     });
 
     // game over
-    if(player.y < -200) location.reload();
+    if (player.y < -200) location.reload();
 }
 
 // =====================
 // DRAW
 // =====================
-function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle='#111';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // player
-    ctx.fillStyle='yellow';
+    ctx.fillStyle = 'yellow';
     ctx.fillRect(player.x, canvas.height - player.y, PLAYER_SIZE, PLAYER_SIZE);
 
     // platforms
-    ctx.fillStyle='#00ff88';
-    platforms.forEach(p=>{
+    ctx.fillStyle = '#00ff88';
+    platforms.forEach(p => {
         ctx.fillRect(p.x, canvas.height - p.y, PLATFORM_WIDTH, PLATFORM_HEIGHT);
     });
 
     // score
-    ctx.fillStyle='#fff';
-    ctx.font='20px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.font = '20px Arial';
     ctx.fillText(`Score: ${score}`, 20, 30);
 }
 
 // =====================
 // GAME LOOP
 // =====================
-function gameLoop(t){
+function gameLoop(t) {
     const dt = t - lastTime;
-    lastTime = t;
-    update(dt);
+    lastTime = t;update(dt);
     draw();
     requestAnimationFrame(gameLoop);
 }
