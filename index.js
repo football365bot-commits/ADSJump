@@ -110,7 +110,7 @@ generateInitialPlatforms(20);
 // UPDATE
 // =====================
 function update(dt) {
-    player.x += inputX * 8;
+    player.x += inputX * 6.5;
     if (player.x < -PLAYER_SIZE) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -PLAYER_SIZE;
 
