@@ -55,7 +55,7 @@ const platforms = [];
 // =====================
 // ITEMS
 // =====================
-const itemTypes = ['trampoline', 'drone', 'rocket', 'spikes', 'bomb'];
+const itemTypes = ['trampoline', 'drone', 'rocket', 'spikes', 'bomb', 'medkit', 'adrenaline'];
 
 function getItemForPlatform() {
     const rand = Math.random();
@@ -64,6 +64,8 @@ function getItemForPlatform() {
     if (rand < 0.020) return 'trampoline';  // чаще
     if (rand < 0.035) return 'bomb';        // редкий
     if (rand < 0.055) return 'spikes';      // чуть чаще
+    if (rand < 0.060) return 'medkit';
+    if (rand < 0.040) return 'adrenaline';
     return null;                             // на многих платформах нет предмета
 }
 
@@ -168,6 +170,8 @@ function update(dt) {
                     case 'rocket': player.vy += 75; break;
                     case 'spikes': player.hp -= 1; break;
                     case 'bomb': player.hp -= 5; break;
+                    case 'medkit': player.hp += 1; break;
+                    case 'adrenaline': player.hp += 5; break;
                 }
                 p.item = null;
             }
@@ -247,6 +251,8 @@ function draw() {
                 case 'rocket': ctx.fillStyle = '#ff0000'; break;
                 case 'spikes': ctx.fillStyle = '#888888'; break;
                 case 'bomb': ctx.fillStyle = '#000000'; break;
+                case 'medkit': ctx.fillStyle = '#00ff00'; break;
+                case 'adrenaline': ctx.fillStyle = '#ff00ff'; break;
             }
             ctx.fillRect(itemX, itemY, 20, 20);
         }
