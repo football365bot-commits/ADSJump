@@ -1,9 +1,6 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-// =====================
-// RESIZE
-// =====================
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -17,10 +14,8 @@ window.addEventListener('resize', resize);
 const GRAVITY = -0.6;
 const BASE_JUMP_FORCE = 15;
 const PLAYER_SIZE = 50;
-
-const BASE_PLATFORM_WIDTH = 120;
+const PLATFORM_WIDTH = 120;
 const PLATFORM_HEIGHT = 20;
-
 const MIN_GAP = 120;
 const MAX_GAP = 160;
 
@@ -37,7 +32,7 @@ const player = {
     x: canvas.width / 2,
     y: canvas.height / 3,
     vy: 0,
-    hp: 100
+    jumpForce: BASE_JUMP_FORCE
 };
 
 // =====================
@@ -46,68 +41,75 @@ const player = {
 let inputX = 0;
 canvas.addEventListener('touchstart', e => {
     e.preventDefault();
-    inputX = e.touches[0].clientX < canvas.width / 2 ? -1 : 1;
+    const x = e.touches[0].clientX;
+    inputX = x < canvas.width / 2 ? -1 : 1;
 });
-canvas.addEventListener('touchend', () => inputX = 0);
+canvas.addEventListener('touchend', e => { e.preventDefault(); inputX = 0; });
 
 // =====================
 // PLATFORMS
 // =====================
 const platforms = [];
 
-// ---------- TYPES BY SCORE ----------
-function getPlatformType() {
-    const normal = Math.max(0.6 - score / 12000, 0.15);
-    const broken = Math.min(0.2 + score / 15000, 0.4);
-    const slow = Math.min(0.1 + score / 20000, 0.25);
-    const fast = 1 - normal - broken - slow;
+// =====================
+// ITEMS
+// =====================
+const itemTypes = ['trampoline', 'drone', 'rocket'];
 
-    const r = Math.random();
-    if (r < normal) return 'normal';
-    if (r < normal + broken) return 'broken';
-    if (r < normal + broken + slow) return 'moving_slow';
+function getItemForPlatform() {
+    const rand = Math.random();
+    if (rand < 0.05) return 'rocket';        // редкий
+    if (rand < 0.15) return 'drone';         // чуть чаще
+    if (rand < 0.35) return 'trampoline';    // чаще
+    return null;                              // на многих платформах нет предмета
+}
+
+// =====================
+// PLATFORM GENERATION
+// =====================
+function getPlatformTypeByScore() {
+    const normalChance = Math.max(0.6 - score / 10000, 0.2);
+    const brokenChance = Math.min(0.2 + score / 15000, 0.4);
+    const movingSlowChance = Math.min(0.1 + score / 20000, 0.2);
+    const movingFastChance = 1 - normalChance - brokenChance - movingSlowChance;
+
+    const rand = Math.random();
+    if (rand < normalChance) return 'normal';
+    if (rand < normalChance + brokenChance) return 'broken';
+    if (rand < normalChance + brokenChance + movingSlowChance) return 'moving_slow';
     return 'moving_fast';
 }
 
-// ---------- CREATE PLATFORM ----------
-function createPlatform(y) {
-    const type = getPlatformType();
+function generateInitialPlatforms(count) {
+    let currentY = 0;
+    for (let i = 0; i < count; i++) {
+        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+        const type = getPlatformTypeByScore();
+        let vx = 0;
+        if (type === 'moving_slow') vx = Math.random() < 0.5 ? 1 : -1;
+        if (type === 'moving_fast') vx = Math.random() < 0.5 ? 3 : -3;
 
-    let vx = 0;
-    if (type === 'moving_slow') vx = Math.random() < 0.5 ? 1.2 : -1.2;
-    if (type === 'moving_fast') vx = Math.random() < 0.5 ? 4 : -4;
+        // предмет на платформе
+        const itemType = getItemForPlatform();
 
-    return {
-        x: Math.random() * (canvas.width - BASE_PLATFORM_WIDTH),
-        y,
-        type,
-        vx,
-        used: false,
-
-        // 🔑 ВАЖНО
-        activated: false,
-        spawnTime: null
-    };
-}
-
-// ---------- INITIAL ----------
-function initPlatforms() {
-    platforms.length = 0;
-    let y = 0;
-    while (y < canvas.height * 2) {
-        platforms.push(createPlatform(y));
-        y += MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+        platforms.push({
+            x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+            y: currentY,
+            type: type,
+            vx: vx,
+            used: false,
+            item: itemType
+        });
+        currentY += gap;
     }
 }
-initPlatforms();
+
+generateInitialPlatforms(20);
 
 // =====================
 // UPDATE
 // =====================
 function update(dt) {
-    const now = performance.now();
-
-    // player movement
     player.x += inputX * 6;
     if (player.x < -PLAYER_SIZE) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -PLAYER_SIZE;
@@ -115,125 +117,114 @@ function update(dt) {
     player.vy += GRAVITY;
     player.y += player.vy;
 
-    // difficulty scaling
-    const platformWidth = Math.max(
-        BASE_PLATFORM_WIDTH - score / 300,
-        60
-    );
-
-    // platforms
     platforms.forEach(p => {
-
-        // -------- ACTIVATE PLATFORM --------
-        if (!p.activated && p.y < player.y + canvas.height) {
-            p.activated = true;
-            p.spawnTime = now;
-        }
-
-        // -------- BROKEN TIMER --------
-        if (p.type === 'broken' && p.activated && !p.used) {
-            const lifeTime = Math.max(
-                9000 - score / 60, // ⬅️ МЕДЛЕННО ускоряется
-                4000              // ⬅️ минимум
-            );
-
-            if (now - p.spawnTime > lifeTime) {
-                p.used = true;
-            }
-        }
-
-        // -------- COLLISION --------
-        if (
-            player.vy < 0 &&
-            !p.used &&
+        // коллизия с платформой
+        if (player.vy < 0 &&
             player.y <= p.y + PLATFORM_HEIGHT &&
             player.y >= p.y &&
             player.x + PLAYER_SIZE > p.x &&
-            player.x < p.x + platformWidth
-        ) {
-            player.vy = BASE_JUMP_FORCE;
+            player.x < p.x + PLATFORM_WIDTH) {
+
+            if (p.type === 'broken' && p.used) return;
+
+            player.vy = player.jumpForce;
+
             if (p.type === 'broken') p.used = true;
+
+            // проверка предмета
+            if (p.item) {
+                switch (p.item) {
+                    case 'trampoline': player.vy += 5; break; // маленький буст
+                    case 'drone': player.vy += 8; break;      // сильнее
+                    case 'rocket': player.vy += 12; break;    // сильный буст
+                }
+                p.item = null; // забрали предмет
+            }
         }
 
-        // -------- MOVEMENT --------
-        if (p.type.includes('moving')) {
+        // движение платформif (p.type === 'moving_slow' || p.type === 'moving_fast') {
             p.x += p.vx;
-            if (p.x < 0 || p.x + platformWidth > canvas.width) {
-                p.vx *= -1;
-            }
+            if (p.x < 0 || p.x + PLATFORM_WIDTH > canvas.width) p.vx *= -1;
         }
     });
 
-    // camera
-    if (player.y > canvas.height / 2) {const delta = player.y - canvas.height / 2;
+    // камера
+    if (player.y > canvas.height / 2) {
+        const delta = player.y - canvas.height / 2;
         player.y = canvas.height / 2;
         platforms.forEach(p => p.y -= delta);
         score += Math.floor(delta);
     }
 
-    // recycle
+    // recycle платформ
     let maxY = Math.max(...platforms.map(p => p.y));
     platforms.forEach((p, i) => {
         if (p.y < -PLATFORM_HEIGHT) {
-            maxY += MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
-            platforms[i] = createPlatform(maxY);
+            const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+            const type = getPlatformTypeByScore();
+            let vx = 0;
+            if (type === 'moving_slow') vx = Math.random() < 0.5 ? 1 : -1;
+            if (type === 'moving_fast') vx = Math.random() < 0.5 ? 3 : -3;
+            const itemType = getItemForPlatform();
+
+            platforms[i] = {
+                x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+                y: maxY + gap,
+                type: type,
+                vx: vx,
+                used: false,
+                item: itemType
+            };
+            maxY = platforms[i].y;
         }
     });
 
-    if (player.y < -300) location.reload();
+    if (player.y < -200) location.reload();
 }
 
 // =====================
 // DRAW
 // =====================
 function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const platformWidth = Math.max(
-        BASE_PLATFORM_WIDTH - score / 300,
-        60
-    );
-
     // player
     ctx.fillStyle = 'yellow';
-    ctx.fillRect(
-        player.x,
-        canvas.height - player.y,
-        PLAYER_SIZE,
-        PLAYER_SIZE
-    );
+    ctx.fillRect(player.x, canvas.height - player.y, PLAYER_SIZE, PLAYER_SIZE);
 
     // platforms
     platforms.forEach(p => {
-        if (p.used) return;
+        if (p.type === 'broken' && p.used) return;
+        switch (p.type) {
+            case 'normal': ctx.fillStyle = '#00ff88'; break;
+            case 'broken': ctx.fillStyle = '#ff4444'; break;
+            case 'moving_slow': ctx.fillStyle = '#00ffff'; break;
+            case 'moving_fast': ctx.fillStyle = '#ff00ff'; break;
+        }
+        ctx.fillRect(p.x, canvas.height - p.y, PLATFORM_WIDTH, PLATFORM_HEIGHT);
 
-        if (p.type === 'normal') ctx.fillStyle = '#00ff88';
-        if (p.type === 'broken') ctx.fillStyle = '#ff4444';
-        if (p.type === 'moving_slow') ctx.fillStyle = '#00ffff';
-        if (p.type === 'moving_fast') ctx.fillStyle = '#ff00ff';
-
-        ctx.fillRect(
-            p.x,
-            canvas.height - p.y,
-            platformWidth,
-            PLATFORM_HEIGHT
-        );
+        // рисуем предмет по центру платформы
+        if (p.item) {
+            const itemX = p.x + PLATFORM_WIDTH / 2 - 10;
+            const itemY = canvas.height - p.y - 20;
+            switch(p.item) {
+                case 'trampoline': ctx.fillStyle = '#ffff00'; break;
+                case 'drone': ctx.fillStyle = '#ff8800'; break;
+                case 'rocket': ctx.fillStyle = '#ff0000'; break;
+            }
+            ctx.fillRect(itemX, itemY, 20, 20);
+        }
     });
 
-    // score
     ctx.fillStyle = '#fff';
     ctx.font = '20px Arial';
     ctx.fillText(`Score: ${score}`, 20, 30);
-    ctx.fillStyle = '#fff';
-    ctx.font = '20px Arial';
-    ctx.textAlign = 'right';
-    ctx.fillText(`HP: ${player.hp}`, canvas.width - 20, 30);
-    ctx.textAlign = 'left';
-    }
+}
 
 // =====================
-// LOOP
+// GAME LOOP
 // =====================
 function gameLoop(t) {
     const dt = t - lastTime;
