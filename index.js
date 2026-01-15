@@ -13,7 +13,7 @@ window.addEventListener('resize', resize);
 // =====================
 const GRAVITY = -0.6;
 const BASE_JUMP_FORCE = 15;
-const PLAYER_SIZE = 50;
+const PLAYER_SIZE = 40;
 const PLATFORM_WIDTH = 80;
 const PLATFORM_HEIGHT = 18;
 const MIN_GAP = 120;
