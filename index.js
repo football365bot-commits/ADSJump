@@ -16,8 +16,8 @@ const BASE_JUMP_FORCE = 15;
 const PLAYER_SIZE = 50;
 const PLATFORM_WIDTH = 120;
 const PLATFORM_HEIGHT = 20;
-const MIN_GAP = 100;
-const MAX_GAP = 160;
+const MIN_GAP = 150;  // увеличили, чтобы платформ было меньше
+const MAX_GAP = 220;
 
 // =====================
 // GAME STATE
@@ -59,7 +59,7 @@ const platforms = [];
 const items = [];
 
 function spawnItem(platform) {
-    if (Math.random() > 0.3) return;
+    if (Math.random() > 0.15) return; // реже предметы
     const types = ['batut', 'drone', 'rocket', 'adrenaline'];
     const type = types[Math.floor(Math.random() * types.length)];
     items.push({
@@ -78,12 +78,11 @@ function createPlatforms() {
         const p = {
             x: Math.random() * (canvas.width - PLATFORM_WIDTH),
             y: currentY,
-            type: Math.random() < 0.25 ? 'broken' : 'normal',
+            type: Math.random() < 0.15 ? 'broken' : 'normal', // лом. платформы реже
             used: false,
             vx: 0
         };
-        // шанс на движущуюся платформу
-        if (Math.random() < 0.15) {
+        if (Math.random() < 0.05) { // движущиеся платформы реже
             p.type = 'moving';
             p.vx = Math.random() < 0.5 ? 1 : -1;
         }
@@ -193,13 +192,13 @@ function update(dt) {
     });
 
     // спавн врагов постепенно
-    const baseSpawnChance = 0.005;
-    const maxSpawnChance = 0.02;
+    const baseSpawnChance = 0.002;
+    const maxSpawnChance = 0.01;
     const enemySpawnChance = Math.min(baseSpawnChance + score / 100000, maxSpawnChance);
     if (Math.random() < enemySpawnChance) {
         const eType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
         const safeY = player.y + canvas.height + 100;
-        if (!enemies.some(e => Math.abs(e.y - safeY) < 100)) {
+        if (!enemies.some(e => Math.abs(e.y - safeY) < 150)) { // увеличено min расстояние
             enemies.push({
                 type: eType.type,
                 x: Math.random() * (canvas.width - eType.size),
@@ -211,10 +210,9 @@ function update(dt) {
         }
     }
 
-    // автострельба с прицелом на ближайшего врага
+    // автострельба по ближайшему врагу
     const visibleEnemies = enemies.filter(e => e.alive && e.y < player.y + canvas.height && e.y > player.y - canvas.height);
     if (visibleEnemies.length > 0 && lastTime % 200 < dt) {
-        // выбираем ближайшего врага
         let nearest = visibleEnemies.reduce((prev, curr) => Math.abs(curr.y - player.y) < Math.abs(prev.y - player.y) ? curr : prev);
         const bulletX = player.x + PLAYER_SIZE / 2 - 2;
         const bulletY = player.y;
@@ -264,11 +262,11 @@ function update(dt) {
             const np = {
                 x: Math.random() * (canvas.width - PLATFORM_WIDTH),
                 y: canvas.height + gap,
-                type: Math.random() < Math.min(0.25 + score / 5000, 0.5) ? 'broken' : 'normal',
+                type: Math.random() < Math.min(0.15 + score / 5000, 0.3) ? 'broken' : 'normal',
                 used: false,
                 vx: 0
             };
-            if (Math.random() < Math.min(0.15 + score / 10000, 0.3)) {
+            if (Math.random() < Math.min(0.05 + score / 10000, 0.15)) {
                 np.type = 'moving';
                 np.vx = Math.random() < 0.5 ? 1 : -1;
             }
@@ -277,6 +275,7 @@ function update(dt) {
         }
     });
 
+    // удаление пуль за экраном
     bullets.filter(b => b.y < canvas.height + 100);
 
     // game over
