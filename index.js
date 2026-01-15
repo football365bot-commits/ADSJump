@@ -62,8 +62,8 @@ function getItemForPlatform() {
     if (rand < 0.003) return 'rocket';      // редкий
     if (rand < 0.008) return 'drone';       // чуть чаще
     if (rand < 0.020) return 'trampoline';  // чаще
-    if (rand < 0.025) return 'bomb';        // редкий
-    if (rand < 0.040) return 'spikes';      // чуть чаще
+    if (rand < 0.035) return 'bomb';        // редкий
+    if (rand < 0.055) return 'spikes';      // чуть чаще
     return null;                             // на многих платформах нет предмета
 }
 
