@@ -11,8 +11,8 @@ window.addEventListener('resize', resize);
 // =====================
 // CONFIG
 // =====================
-const GRAVITY = -0.9;
-const BASE_JUMP_FORCE = 22.5;
+const GRAVITY = -0.8;
+const BASE_JUMP_FORCE = 15.5;
 const PLAYER_SIZE = 50;
 const PLATFORM_WIDTH = 80;
 const PLATFORM_HEIGHT = 18;
