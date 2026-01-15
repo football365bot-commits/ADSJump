@@ -16,8 +16,6 @@ const BASE_JUMP_FORCE = 15;
 const PLAYER_SIZE = 50;
 const PLATFORM_WIDTH = 120;
 const PLATFORM_HEIGHT = 20;
-const MIN_GAP = 120;
-const MAX_GAP = 160;
 const MAX_JUMP_HEIGHT = 200; // максимальная высота, которую игрок может допрыгнуть
 
 // =====================
@@ -52,26 +50,26 @@ canvas.addEventListener('touchend', e => { e.preventDefault(); inputX = 0; });
 // =====================
 const platforms = [];
 
-// создаём начальные платформы
+// создаём начальные платформы (только 3–4)
 function createInitialPlatforms() {
     let y = 0;
-    while (y < canvas.height * 2) {
-        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+    const initialCount = 4; // стартовое количество платформ
+    for (let i = 0; i < initialCount; i++) {
         platforms.push({
             x: Math.random() * (canvas.width - PLATFORM_WIDTH),
             y: y,
             type: 'normal'
         });
-        y += gap;
+        // между платформами расстояние = половина или чуть меньше MAX_JUMP_HEIGHT
+        y += MAX_JUMP_HEIGHT * (0.7 + Math.random() * 0.3);
     }
 }
 createInitialPlatforms();
 
 // функция генерации новой платформы над экраном
 function generatePlatformAbove(lastY) {
-    // сложность растёт с score: gap увеличивается, платформ меньше
-    const difficultyFactor = Math.min(0.5, score / 5000); // до 50% увеличения gap
-    const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP) * (1 + difficultyFactor);
+    // расстояние между платформами — примерно половина MAX_JUMP_HEIGHT
+    const gap = MAX_JUMP_HEIGHT * (0.7 + Math.random() * 0.3);
     const newY = lastY + gap;
 
     return {
