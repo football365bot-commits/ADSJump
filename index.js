@@ -181,7 +181,8 @@ function updateBullets() {
             }
         }
 
-        if (b.x < 0  b.x > canvas.width  b.y < 0 || b.y > canvas.height) {
+        if (b.x < 0 || b.x > canvas.width  b.y < 0 || b.y > canvas.height) {
+        
             bullets.splice(i, 1);
         }
     }
