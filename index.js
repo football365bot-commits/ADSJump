@@ -188,7 +188,7 @@ function update(dt){
            player.x+PLAYER_SIZE>p.x &&
            player.x<p.x+PLATFORM_WIDTH){
             if(p.type==='broken' && p.used) return;
-            player.vy = player.jumpForce;
+            player.vy = -player.jumpForce;
             if(p.type==='broken') p.used = true;
         }
     });
