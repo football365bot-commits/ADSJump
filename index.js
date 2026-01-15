@@ -59,14 +59,14 @@ const itemTypes = ['trampoline', 'drone', 'rocket', 'spikes', 'bomb', 'medkit', 
 
 function getItemForPlatform() {
     const rand = Math.random();
-    if (rand < 0.003) return 'rocket';      // редкий
-    if (rand < 0.008) return 'drone';       // чуть чаще
-    if (rand < 0.020) return 'trampoline';  // чаще
-    if (rand < 0.035) return 'bomb';        // редкий
-    if (rand < 0.055) return 'spikes';      // чуть чаще
+    if (rand < 0.003) return 'rocket';
+    if (rand < 0.008) return 'drone';
+    if (rand < 0.020) return 'trampoline';
+    if (rand < 0.035) return 'bomb';
+    if (rand < 0.055) return 'spikes';
     if (rand < 0.060) return 'medkit';
     if (rand < 0.040) return 'adrenaline';
-    return null;                             // на многих платформах нет предмета
+    return null;
 }
 
 // =====================
@@ -106,7 +106,7 @@ function getPlatformTypeByScore() {
 }
 
 function generateInitialPlatforms(count) {
-    let currentY = 100; 
+    let currentY = 100;
     for (let i = 0; i < count; i++) {
         const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
         const type = getPlatformTypeByScore();
@@ -151,8 +151,7 @@ function update(dt) {
         }
 
         // коллизия с платформой
-        if (player.vy < 0 &&player.y <= p.y + PLATFORM_HEIGHT &&
-            player.y >= p.y &&
+        if (player.vy < 0 && player.y <= p.y + PLATFORM_HEIGHT &&player.y >= p.y &&
             player.x + PLAYER_SIZE > p.x &&
             player.x < p.x + PLATFORM_WIDTH) {
 
@@ -170,23 +169,22 @@ function update(dt) {
                     case 'rocket': player.vy += 75; break;
                     case 'spikes': player.hp -= 1; break;
                     case 'bomb': player.hp -= 5; break;
-                    case 'medkit': player.hp = Math.min(player.hp + 1, 100);
-                    case 'adrenaline': player.hp = Math.min(player.hp + 5, 100);
+                    case 'medkit': player.hp = Math.min(player.hp + 1, 100); break;
+                    case 'adrenaline': player.hp = Math.min(player.hp + 5, 100); break;
                 }
                 p.item = null;
             }
         }
 
-        // движение платформ    
-        // движение платформ с динамическим ускорением
+        // === Динамическое движение платформ ===
         if (p.type === 'moving_slow') {
-            let speed = 1 + score * 0.00005; // базовая + ускорение
-            if (speed > 3) speed = 3;        // максимальная скорость
-            p.vx = Math.sign(p.vx) * speed;  // сохраняем направление
+            let speed = 1 + score * 0.00005;
+            if (speed > 3) speed = 3;
+            p.vx = Math.sign(p.vx) * speed;
             p.x += p.vx;
         } else if (p.type === 'moving_fast') {
-            let speed = 3 + score * 0.0001;  // базовая + ускорение
-            if (speed > 8) speed = 8;        // максимальная скорость
+            let speed = 3 + score * 0.0001;
+            if (speed > 8) speed = 8;
             p.vx = Math.sign(p.vx) * speed;
             p.x += p.vx;
         }
@@ -194,7 +192,7 @@ function update(dt) {
         // отражение от краёв
         if (p.x < 0) p.vx = Math.abs(p.vx);
         if (p.x + PLATFORM_WIDTH > canvas.width) p.vx = -Math.abs(p.vx);
-        
+    });
 
     // камера
     if (player.y > canvas.height / 2) {
@@ -264,8 +262,7 @@ function draw() {
                 case 'spikes': ctx.fillStyle = '#888888'; break;
                 case 'bomb': ctx.fillStyle = '#000000'; break;
                 case 'medkit': ctx.fillStyle = '#00ff00'; break;
-                case 'adrenaline': ctx.fillStyle = '#ff00ff'; break;
-            }
+                case 'adrenaline': ctx.fillStyle = '#ff00ff'; break;}
             ctx.fillRect(itemX, itemY, 20, 20);
         }
     });
