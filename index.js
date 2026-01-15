@@ -25,7 +25,7 @@ const CAMERA_SPEED = 1.25;
 // =====================
 let lastTime = 0;
 let score = 0;
-let lastShotTime = 0
+let lastShotTime = 0;
 
 // =====================
 // PLAYER
