@@ -1,55 +1,23 @@
-/* ==========================
-   Общие настройки для body/html
-   ========================== */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;               
-  touch-action: none;             
-  user-select: none;              
+  overflow: hidden;
+
+  touch-action: none;
+  user-select: none;
   -webkit-user-select: none;
   -ms-user-select: none;
-  -webkit-touch-callout: none;    
+  -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
-  background-color: #000;         
+
+  background: #000;
 }
 
-/* ==========================
-   Игровое поле
-   ========================== */
-.grid {
-  position: relative;
+canvas {
+  display: block;
   width: 100%;
   height: 100%;
-  background-image: url('background.png');
-  background-size: cover;
-  background-position: center;
-  overflow: hidden;
-}
-
-/* ==========================
-   Doodler
-   ========================== */
-.doodler {
-  position: absolute;
-  background-image: url('doodler-guy.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-  width: 10%;      /* ширина относительно grid */
-  height: auto;    /* высота подстраивается под ширину */
-
-}
-
-/* ==========================
-   Платформы
-   ========================== */
-.platform {
-  position: absolute;
-  background-image: url('platform.png');
-  background-size: contain;  /* теперь картинка уменьшится, не обрезаясь */
-  background-repeat: no-repeat;
-  width: 10%;               /* ширина платформы относительно grid */
-  height: auto;             /* высота под ширину */
+  touch-action: none;
 }
