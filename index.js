@@ -16,7 +16,8 @@ const BASE_JUMP_FORCE = 15;
 const PLAYER_SIZE = 50;
 const PLATFORM_WIDTH = 120;
 const PLATFORM_HEIGHT = 20;
-const MAX_JUMP_HEIGHT = 200; // максимальная высота, которую игрок может допрыгнуть
+const MIN_GAP = 100;
+const MAX_GAP = 160;
 
 // =====================
 // GAME STATE
@@ -50,40 +51,42 @@ canvas.addEventListener('touchend', e => { e.preventDefault(); inputX = 0; });
 // =====================
 const platforms = [];
 
-// создаём начальные платформы (только 3–4)
-function createInitialPlatforms() {
-    let y = 0;
-    const initialCount = 4; // стартовое количество платформ
-    for (let i = 0; i < initialCount; i++) {
-        platforms.push({
+function createPlatforms() {
+    let currentY = 0;
+    while (currentY < canvas.height * 2) {
+        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+
+        // Определяем тип платформы случайно
+        let typeChance = Math.random();
+        let type = 'normal';
+        let vx = 0;
+        if (typeChance < 0.2) type = 'broken';            // 20% — ломается
+        else if (typeChance < 0.4) {                      // 20% — медленно движущаяся
+            type = 'moving';
+            vx = Math.random() < 0.5 ? 1 : -1;
+        } else if (typeChance < 0.5) {                    // 10% — быстро движущаяся
+            type = 'moving';
+            vx = Math.random() < 0.5 ? 3 : -3;
+        }
+
+        const p = {
             x: Math.random() * (canvas.width - PLATFORM_WIDTH),
-            y: y,
-            type: 'normal'
-        });
-        // между платформами расстояние = половина или чуть меньше MAX_JUMP_HEIGHT
-        y += MAX_JUMP_HEIGHT * (0.7 + Math.random() * 0.3);
+            y: currentY,
+            type: type,
+            vx: vx,
+            used: false
+        };
+        platforms.push(p);
+        currentY += gap;
     }
 }
-createInitialPlatforms();
-
-// функция генерации новой платформы над экраном
-function generatePlatformAbove(lastY) {
-    // расстояние между платформами — примерно половина MAX_JUMP_HEIGHT
-    const gap = MAX_JUMP_HEIGHT * (0.7 + Math.random() * 0.3);
-    const newY = lastY + gap;
-
-    return {
-        x: Math.random() * (canvas.width - PLATFORM_WIDTH),
-        y: newY,
-        type: 'normal'
-    };
-}
+createPlatforms();
 
 // =====================
 // UPDATE
 // =====================
 function update(dt) {
-    // горизонтальное движение
+    // движение игрока
     player.x += inputX * 6;
     if (player.x < -PLAYER_SIZE) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -PLAYER_SIZE;
@@ -92,6 +95,14 @@ function update(dt) {
     player.vy += GRAVITY;
     player.y += player.vy;
 
+    // движение платформ
+    platforms.forEach(p => {
+        if (p.type === 'moving') {
+            p.x += p.vx;
+            if (p.x < 0 || p.x + PLATFORM_WIDTH > canvas.width) p.vx *= -1;
+        }
+    });
+
     // коллизия с платформами
     platforms.forEach(p => {
         if (player.vy < 0 &&
@@ -99,7 +110,11 @@ function update(dt) {
             player.y >= p.y &&
             player.x + PLAYER_SIZE > p.x &&
             player.x < p.x + PLATFORM_WIDTH) {
+
+            if (p.type === 'broken' && p.used) return;
+
             player.vy = player.jumpForce;
+            if (p.type === 'broken') p.used = true;
         }
     });
 
@@ -111,12 +126,31 @@ function update(dt) {
         score += Math.floor(delta);
     }
 
-    // recycle платформ: удаляем слишком низкие и добавляем сверху
-    let maxY = Math.max(...platforms.map(p => p.y));
+    // recycle платформ
     platforms.forEach((p, i) => {
         if (p.y < -PLATFORM_HEIGHT) {
-            platforms[i] = generatePlatformAbove(maxY);
-            maxY = platforms[i].y;
+            const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+
+            // заново выбираем тип платформы при повторном появлении
+            let typeChance = Math.random();
+            let type = 'normal';
+            let vx = 0;
+            if (typeChance < 0.2) type = 'broken';
+            else if (typeChance < 0.4) {
+                type = 'moving';
+                vx = Math.random() < 0.5 ? 1 : -1;
+            } else if (typeChance < 0.5) {
+                type = 'moving';
+                vx = Math.random() < 0.5 ? 3 : -3;
+            }
+
+            platforms[i] = {
+                x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+                y: canvas.height + gap,
+                type: type,
+                vx: vx,
+                used: false
+            };
         }
     });
 
@@ -137,8 +171,11 @@ function draw() {
     ctx.fillRect(player.x, canvas.height - player.y, PLAYER_SIZE, PLAYER_SIZE);
 
     // platforms
-    ctx.fillStyle = '#00ff88';
     platforms.forEach(p => {
+        if (p.type === 'broken' && p.used) return;
+        if (p.type === 'normal') ctx.fillStyle = '#00ff88';
+        else if (p.type === 'broken') ctx.fillStyle = '#ff4444';
+        else if (p.type === 'moving') ctx.fillStyle = '#00ffff';
         ctx.fillRect(p.x, canvas.height - p.y, PLATFORM_WIDTH, PLATFORM_HEIGHT);
     });
 
@@ -153,7 +190,8 @@ function draw() {
 // =====================
 function gameLoop(t) {
     const dt = t - lastTime;
-    lastTime = t;update(dt);
+    lastTime = t;
+    update(dt);
     draw();
     requestAnimationFrame(gameLoop);
 }
