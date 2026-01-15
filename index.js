@@ -65,8 +65,9 @@ function getItemForPlatform() {
     if (rand < 0.015) return 'trampoline';
     if (rand < 0.025) return 'bomb';
     if (rand < 0.040) return 'spikes';
-    if (rand < 0.042) return 'medkit';
     if (rand < 0.028) return 'adrenaline';
+    if (rand < 0.042) return 'medkit';
+    
     return null;
 }
 
