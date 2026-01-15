@@ -25,7 +25,6 @@ const CAMERA_SPEED = 1.25;
 // =====================
 let lastTime = 0;
 let score = 0;
-let lastShotTime = 0;
 
 // =====================
 // PLAYER
@@ -66,8 +65,8 @@ function getItemForPlatform() {
     if (rand < 0.015) return 'trampoline';
     if (rand < 0.025) return 'bomb';
     if (rand < 0.040) return 'spikes';
-    if (rand < 0.028) return 'adrenline';
     if (rand < 0.042) return 'medkit';
+    if (rand < 0.028) return 'adrenline';
     return null;                              // на многих платформах нет предмета
 }
 
@@ -207,19 +206,6 @@ function update(dt) {
     });
 
     score += Math.floor(delta);
-    if (enemies.length > 0 && now - lastShotTime > 300) { // каждые 300 мс
-    // ищем ближайшего врага
-    const nearest = enemies.reduce((prev, curr) => {
-        const dPrev = Math.hypot(player.x - prev.x, player.y - prev.y);
-        const dCurr = Math.hypot(player.x - curr.x, player.y - curr.y);
-        return dPrev < dCurr ? prev : curr;
-    });
-
-    // стреляем по нему
-    fireBullet(player, nearest);
-
-    // обновляем время последнего выстрела
-    lastShotTime = now;
 }
 
     // recycle платформ
