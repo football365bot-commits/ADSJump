@@ -227,9 +227,11 @@ function update(dt) {
     // === ENEMIES UPDATE ===
     enemies.forEach((enemy, eIndex) => {
         if (!enemy.active) return;
+
+        // движение врага
         enemy.x += enemy.vx;
         enemy.y += enemy.vy;
-    
+
         if (enemy.hp <= 0 || enemy.y > canvas.height + 50) {
             enemy.active = false;
             return;
@@ -237,11 +239,9 @@ function update(dt) {
 
         if (enemy.x < 0) enemy.vx = Math.abs(enemy.vx);
         if (enemy.x + enemy.size > canvas.width) enemy.vx = -Math.abs(enemy.vx);
-    });
 
         // === Враг стреляет по игроку ===
-        let fireInterval = Math.max(MIN_FIRE_INTERVAL, MAX_FIRE_INTERVAL - score * 0.005);
-
+        let fireInterval = Math.max(ENEMY_FIRE_MIN_INTERVAL, ENEMY_FIRE_MAX_INTERVAL - score * 0.005);
         if (performance.now() - enemy.lastShot > fireInterval) {
             const dx = (player.x + PLAYER_SIZE / 2) - (enemy.x + enemy.size / 2);
             const dy = (player.y + PLAYER_SIZE / 2) - (enemy.y + enemy.size / 2);
@@ -265,7 +265,6 @@ function update(dt) {
             b.x += b.vx;
             b.y += b.vy;
 
-            // коллизия с игроком
             if (player.x + PLAYER_SIZE > b.x && player.x < b.x + b.size &&
                 player.y + PLAYER_SIZE > b.y && player.y < b.y + b.size) {
                 player.hp -= enemy.damage;
@@ -273,21 +272,16 @@ function update(dt) {
                 continue;
             }
 
-            // убираем пули за пределами экрана
-            if (
-                b.x < 0 ||
-                b.x > canvas.width ||
-                b.y < 0 ||
-                b.y > canvas.height
-            ) {
+            if (b.x < 0  b.x > canvas.width  b.y < 0 || b.y > canvas.height) {
                 enemy.bullets.splice(i, 1);
             }
         }
 
-        // collision with bullets
+        // === Попадание пуль игрока ===
         for (let i = bullets.length - 1; i >= 0; i--) {
-            if (bullets[i].x > enemy.x && bullets[i].x < enemy.x + enemy.width &&
-                bullets[i].y > enemy.y && bullets[i].y < enemy.y + enemy.height) {
+            const b = bullets[i];
+            if (b.x > enemy.x && b.x < enemy.x + enemy.width &&
+                b.y > enemy.y && b.y < enemy.y + enemy.height) {
                 enemy.hp -= 10;
                 bullets.splice(i, 1);
                 if (enemy.hp <= 0 || enemy.y > canvas.height + 50) enemy.active = false;
@@ -295,7 +289,6 @@ function update(dt) {
             }
         }
     });
-
     // === PLATFORMS UPDATE ===
     platforms.forEach((p, index) => {
         if (p.temp && now - p.spawnTime > p.lifeTime) {
