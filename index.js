@@ -384,7 +384,11 @@ function update(dt) {
     }
        
 
-    if (player.y < -200) location.reload();
+    // === ПРОВЕРКА GAME OVER ===
+    if (player.hp <= 0 || player.y < -200) {
+        alert("Game Over!");
+        location.reload(); // или можно вызвать свою функцию showGameOver()
+    }
 }
 
 // =====================
