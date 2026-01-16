@@ -60,11 +60,15 @@ function spawnEnemy() {
 
     enemies.push({
         x: Math.random() * (canvas.width - 40),
-        y: canvas.height + 50, // сверху экрана
+        y: canvas.height + 50,
         vx: vx,
+        vy: 0,
         type: type,
         size: 30,
-        hp: 1
+        width: 30,   // для коллизий
+        height: 30,  // для коллизий
+        hp: 1,
+        damage: 10
     });
 }
 // =====================
