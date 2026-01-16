@@ -61,6 +61,23 @@ const ENEMY_MAX = {
     slow:   { speed: 3, damage: 2, hp: 7 },
     fast:   { speed: 6, damage: 4, hp: 10 }
 };
+const MAX_ENEMIES = 10; // максимальное количество врагов
+const enemies = Array.from({ length: MAX_ENEMIES }, () => ({
+    active: false,
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    type: 'static',
+    size: 30,
+    width: 30,
+    height: 30,
+    hp: 0,
+    maxHp: 0,
+    damage: 0,
+    lastShot: 0,
+    bullets: []
+}));
 
 
 function getEnemyTypeByScore(score) {
@@ -210,6 +227,7 @@ function update(dt) {
 
     // === ENEMIES UPDATE ===
     enemies.forEach((enemy, eIndex) => {
+        if (!enemy.active) return;
         enemy.x += enemy.vx;
 
         if (enemy.x < 0) enemy.vx = Math.abs(enemy.vx);
@@ -266,7 +284,7 @@ function update(dt) {
                 bullets[i].y > enemy.y && bullets[i].y < enemy.y + enemy.height) {
                 enemy.hp -= 10;
                 bullets.splice(i, 1);
-                if (enemy.hp <= 0) enemies.splice(eIndex, 1);
+                if (enemy.hp <= 0 || enemy.y > canvas.height + 50) enemy.active = false;
                 break;
             }
         }
@@ -366,21 +384,23 @@ function update(dt) {
             if (type === 'slow') vx = Math.random() < 0.5 ? ENEMY_MAX.slow.speed : -ENEMY_MAX.slow.speed;
             if (type === 'fast') vx = Math.random() < 0.5 ? ENEMY_MAX.fast.speed : -ENEMY_MAX.fast.speed;
 
-            enemies.push({
-                x: Math.random() * (canvas.width - 30),
-                y: maxEnemyY + j * 40 + ENEMY_RESPAWN_OFFSET, // небольшое смещение по Y
-                vx: vx,
-                vy: 0,
-                type: type,
-                size: 30,
-                width: 30,
-                height: 30,
-                hp: ENEMY_MAX[type].hp,
-                maxHp: ENEMY_MAX[type].hp,
-                damage: ENEMY_MAX[type].damage,
-                lastShot: performance.now(),
-                bullets: []
-            });
+            const enemy = enemies.find(e => !e.active);
+            if (enemy) {
+                enemy.active = true;
+                enemy.type = type;
+                enemy.x = Math.random() * (canvas.width - 30);
+                enemy.y = maxEnemyY + j * 40 + ENEMY_RESPAWN_OFFSET;
+                enemy.vx = vx;
+                enemy.vy = 0;
+                enemy.size = 30;
+                enemy.width = 30;
+                enemy.height = 30;
+                enemy.hp = ENEMY_MAX[type].hp;
+                enemy.maxHp = ENEMY_MAX[type].hp;
+                enemy.damage = ENEMY_MAX[type].damage;
+                enemy.lastShot = performance.now();
+                enemy.bullets = [];
+            }
         }
     }
        
