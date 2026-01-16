@@ -43,6 +43,30 @@ const player = {
 // =====================
 const bullets = [];
 let lastShotTime = 0;
+
+// =====================
+// ENEMIES
+// =====================
+const enemies = [];
+
+function spawnEnemy() {
+    const typeRand = Math.random();
+    let type = 'static';
+    let vx = 0;
+
+    if (typeRand < 0.5) type = 'static';
+    else if (typeRand < 0.8) { type = 'slow'; vx = Math.random() < 0.5 ? 1 : -1; }
+    else { type = 'fast'; vx = Math.random() < 0.5 ? 3 : -3; }
+
+    enemies.push({
+        x: Math.random() * (canvas.width - 40),
+        y: canvas.height + 50, // сверху экрана
+        vx: vx,
+        type: type,
+        size: 30,
+        hp: 1
+    });
+}
 // =====================
 // PLAYER SKIN
 // =====================
@@ -174,6 +198,30 @@ function update(dt) {
             bullets.splice(i, 1);
         }
     }
+    // === ENEMIES UPDATE ===
+    enemies.forEach((enemy, eIndex) => {
+        enemy.y += enemy.vy;
+        enemy.x += enemy.vx;
+
+        // проверка коллизии с игроком
+        if (player.x + PLAYER_SIZE > enemy.x &&
+            player.x < enemy.x + enemy.width &&
+            player.y + PLAYER_SIZE > enemy.y &&
+            player.y < enemy.y + enemy.height) {
+            player.hp -= enemy.damage; // наносим урон игроку
+        }
+
+        // === КОЛЛИЗИЯ ПУЛЯ → ВРАГ ===
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            if (bullets[i].x > enemy.x && bullets[i].x < enemy.x + enemy.width &&
+                bullets[i].y > enemy.y && bullets[i].y < enemy.y + enemy.height) {
+                enemy.hp -= 10; // урон от пули
+                bullets.splice(i, 1); // удаляем пулю
+                if (enemy.hp <= 0) enemies.splice(eIndex, 1); // убиваем врага
+                break;
+            }
+        }
+    });
 
     platforms.forEach((p, index) => {// удаляем временную платформу, если время вышло
         if (p.temp && now - p.spawnTime > p.lifeTime) {
@@ -261,6 +309,7 @@ function update(dt) {
             maxY = platforms[i].y;
         }
     });
+    
 
     if (player.y < -200) location.reload();
 }
@@ -317,6 +366,15 @@ function draw() {
             }
             ctx.fillRect(itemX, itemY, 20, 20);
         }
+    });
+    // === ENEMIES DRAW ===
+    enemies.forEach(e => {
+        switch(e.type) {
+            case 'static': ctx.fillStyle = '#ff0000'; break;   // красный
+            case 'slow': ctx.fillStyle = '#ff8800'; break;     // оранжевый
+            case 'fast': ctx.fillStyle = '#ffff00'; break;     // жёлтый
+        }
+        ctx.fillRect(e.x, canvas.height - e.y - e.size, e.size, e.size);
     });
 
     // HUD
