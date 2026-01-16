@@ -78,7 +78,7 @@ function generateInitialEnemies(count) {
             height: 30,
             hp: 1,
             damage: 10,
-            lastShot: perfomance.now(),
+            lastShot: performance.now(),
             bullets: []
         });
 
