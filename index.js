@@ -53,8 +53,8 @@ const enemies = [];
 
 function getEnemyTypeByScore() {
     const rand = Math.random();
-    if (rand < 0.5) return 'static';
-    if (rand < 0.8) return 'slow';
+    if (rand < 0.005) return 'static';
+    if (rand < 0.008) return 'slow';
     return 'fast';
 }
 
@@ -77,7 +77,7 @@ function generateInitialEnemies(count) {
             width: 30,
             height: 30,
             hp: 1,
-            damage: 10,
+            damage: 1,
             lastShot: performance.now(),
             bullets: []
         });
