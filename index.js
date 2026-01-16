@@ -40,7 +40,7 @@ const player = {
 // PLAYER SKIN
 // =====================
 const playerImage = new Image();
-playerImage.src = 'jumper.png'; // путь к файлу
+playerImage.src = 'compressed_photo_2026-01-16_10-11-34.png'; // путь к файлу
 // =====================
 // INPUT
 // =====================
