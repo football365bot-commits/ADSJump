@@ -52,10 +52,21 @@ let lastShotTime = 0;
 const enemies = [];
 
 function getEnemyTypeByScore() {
-    const rand = Math.random();
-    if (rand < 0.001) return 'static';
-    if (rand < 0.0008) return 'slow';
-    if (rand < 0.0005) return 'fast';
+    const r = Math.random();
+
+    if (score < 1000) {           // ранние очки — почти все враги статичные
+        if (r < 0.8) return 'static';
+        if (r < 0.95) return 'slow';
+        return 'fast';
+    } else if (score < 5000) {    // средний уровень — больше медленных и быстрых
+        if (r < 0.4) return 'static';
+        if (r < 0.8) return 'slow';
+        return 'fast';
+    } else {                      // высокий уровень — большинство быстрые или медленные
+        if (r < 0.2) return 'static';
+        if (r < 0.6) return 'slow';
+        return 'fast';
+    }
 }
 
 function generateInitialEnemies(count) {
