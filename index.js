@@ -51,53 +51,47 @@ let lastShotTime = 0;
 // =====================
 const enemies = [];
 
-function getEnemyTypeByScore() {
-    const r = Math.random();
+// =====================
+// SPAWN ENEMIES BASED ON SCORE (SAFE)
+// =====================
+function spawnEnemiesByScore() {
+    // Чем выше score, тем выше шанс спауна (0.01..0.2)
+    const spawnChance = Math.min(0.01 + score * 0.00005, 0.2);
 
-    if (score < 1000) {           // ранние очки — почти все враги статичные
-        if (r < 0.8) return 'static';
-        if (r < 0.95) return 'slow';
-        return 'fast';
-    } else if (score < 5000) {    // средний уровень — больше медленных и быстрых
-        if (r < 0.4) return 'static';
-        if (r < 0.8) return 'slow';
-        return 'fast';
-    } else {                      // высокий уровень — большинство быстрые или медленные
-        if (r < 0.2) return 'static';
-        if (r < 0.6) return 'slow';
-        return 'fast';
-    }
-}
+    if (Math.random() < spawnChance) {
+        // Определяем тип врага
+        const rand = Math.random();
+        let type = 'static';
+        if (rand < 0.4) type = 'slow';
+        else if (rand < 0.6) type = 'fast';
 
-function generateInitialEnemies(count) {
-    let currentY = 150;
-    for (let i = 0; i < count; i++) {
-        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
-        const type = getEnemyTypeByScore();
+        // Задаем скорость в зависимости от score, но с ограничением
         let vx = 0;
-        if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
-        if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
+        if (type === 'slow') {
+            const speed = Math.min(3, 1 + score * 0.0002); // max 3
+            vx = Math.random() < 0.5 ? speed : -speed;
+        } else if (type === 'fast') {
+            const speed = Math.min(7, 3 + score * 0.0003); // max 7
+            vx = Math.random() < 0.5 ? speed : -speed;
+        }
 
+        // Добавляем врага сверху за экраном
         enemies.push({
             x: Math.random() * (canvas.width - 30),
-            y: currentY,
+            y: canvas.height + 50, // вне экрана, сверху
             vx: vx,
             vy: 0,
             type: type,
             size: 30,
             width: 30,
             height: 30,
-            hp: 1,
-            damage: 1,
+            hp: 1,         // фикс
+            damage: 10,    // фикс
             lastShot: performance.now(),
             bullets: []
         });
-
-        currentY += gap;
     }
 }
-
-generateInitialEnemies(10);
 
 // =====================
 // PLAYER SKIN
@@ -341,6 +335,8 @@ function update(dt) {
         score += Math.floor(delta);
     }
 
+    spawnEnemiesByScore();
+
     // === RECYCLE PLATFORMS ===
     let maxY = Math.max(...platforms.map(p => p.y));
     platforms.forEach((p, i) => {
@@ -364,52 +360,6 @@ function update(dt) {
         }
     });
 
-  
-    // === SPAWN NEW ENEMIES ===
-    function spawnEnemy() {
-        let x, y;
-        let safe = false;
-
-        // ищем координаты, чтобы не спавнилось на платформе
-        do {
-            x = Math.random() * (canvas.width - 30);
-            y = Math.random() * (canvas.height - 100) + 50; // верх/середина экрана
-            safe = true;
-
-            for (let p of platforms) {
-                if (y > p.y && y < p.y + PLATFORM_HEIGHT &&
-                    x + 30 > p.x && x < p.x + PLATFORM_WIDTH) {
-                    safe = false;
-                    break;
-                }
-            }
-        } while (!safe);
-
-        const type = getEnemyTypeByScore();
-        let vx = 0;
-        if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
-        if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
-
-        enemies.push({
-            x: x,
-            y: y,
-            vx: vx,
-            vy: 0,
-            type: type,
-            size: 30,
-            width: 30,
-            height: 30,
-            hp: 1,
-            damage: 10,
-            lastShot: performance.now(),
-            bullets: []
-        });
-    }
-
-    // вызываем спавн по прогрессии score
-    if (enemies.length < Math.min(3 + Math.floor(score / 500), 10)) {
-        spawnEnemy();
-    }
 // =====================
 // DRAW
 // =====================
