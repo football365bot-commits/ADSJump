@@ -19,8 +19,8 @@ const PLATFORM_HEIGHT = 15;
 const MIN_GAP = 120;
 const MAX_GAP = 160;
 const CAMERA_SPEED = 1.25;
-const BULLET_SPEED = 12;
-const BULLET_RADIUS = 4;
+const BULLET_SPEED = -12;
+const BULLET_SIZE = 4;
 const FIRE_RATE = 150;
 // =====================
 // GAME STATE
@@ -147,15 +147,6 @@ generateInitialPlatforms(20);
 // =====================
 function update(dt) {
     const now = performance.now();
-    // === AUTO SHOOT ===
-    if (now - lastShotTime > FIRE_RATE) {
-        bullets.push({
-            x: player.x + PLAYER_SIZE / 2,
-            y: player.y + PLAYER_SIZE,
-            vy: BULLET_SPEED
-        });
-        lastShotTime = now;
-    }
 
     player.x += inputX * 8;
     if (player.x < -PLAYER_SIZE) player.x = canvas.width;
@@ -163,6 +154,17 @@ function update(dt) {
 
     player.vy += GRAVITY;
     player.y += player.vy;
+
+    
+    // === AUTO SHOOT ===
+    if (now - lastShotTime > FIRE_RATE) {
+        bullets.push({
+            x: player.x + PLAYER_SIZE / 2,
+            y: player.y,
+            vy: BULLET_SPEED
+        });
+        lastShotTime = now;
+    }
 
     // === BULLETS UPDATE ===
     for (let i = bullets.length - 1; i >= 0; i--) {
