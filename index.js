@@ -58,36 +58,6 @@ function getEnemyTypeByScore() {
     return 'fast';
 }
 
-function generateInitialEnemies(count) {
-    let currentY = 150;
-    for (let i = 0; i < count; i++) {
-        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
-        const type = getEnemyTypeByScore();
-        let vx = 0;
-        if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
-        if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
-
-        enemies.push({
-            x: Math.random() * (canvas.width - 30),
-            y: currentY,
-            vx: vx,
-            vy: 0,
-            type: type,
-            size: 30,
-            width: 30,
-            height: 30,
-            hp: 1,
-            damage: 10,
-            lastShot: performance.now(),
-            bullets: []
-        });
-
-        currentY += gap;
-    }
-}
-
-generateInitialEnemies(10);
-
 // =====================
 // PLAYER SKIN
 // =====================
@@ -162,7 +132,8 @@ function getPlatformTypeByScore() {
 }
 
 function generateInitialPlatforms(count) {
-    let currentY = 100;for (let i = 0; i < count; i++) {
+    let currentY = 100;
+    for (let i = 0; i < count; i++) {
         const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
         const type = getPlatformTypeByScore();
         let vx = 0;
@@ -185,8 +156,7 @@ generateInitialPlatforms(20);
 // =====================
 // UPDATE
 // =====================
-function update(dt) {
-    const now = performance.now();
+function update(dt) {const now = performance.now();
 
     // === PLAYER MOVEMENT ===
     player.x += inputX * 8;
@@ -220,7 +190,7 @@ function update(dt) {
         if (enemy.x + enemy.size > canvas.width) enemy.vx = -Math.abs(enemy.vx);
 
         // === Враг стреляет по игроку ===
-        if (performance.now() - enemy.lastShot > 500) { // просто время между выстрелами
+        if (performance.now() - enemy.lastShot > 500) { 
             const dx = (player.x + PLAYER_SIZE / 2) - (enemy.x + enemy.size / 2);
             const dy = (player.y + PLAYER_SIZE / 2) - (enemy.y + enemy.size / 2);
             const dist = Math.sqrt(dx*dx + dy*dy);
@@ -243,7 +213,7 @@ function update(dt) {
             b.x += b.vx;
             b.y += b.vy;
 
-            // коллизия с игроком
+            // коллизия с игроком (только пули!)
             if (player.x + PLAYER_SIZE > b.x && player.x < b.x + b.size &&
                 player.y + PLAYER_SIZE > b.y && player.y < b.y + b.size) {
                 player.hp -= enemy.damage;
@@ -252,12 +222,7 @@ function update(dt) {
             }
 
             // убираем пули за пределами экрана
-            if (
-                b.x < 0 ||
-                b.x > canvas.width ||
-                b.y < 0 ||
-                b.y > canvas.height
-            ) {
+            if (b.x < 0  b.x > canvas.width  b.y < 0 || b.y > canvas.height) {
                 enemy.bullets.splice(i, 1);
             }
         }
@@ -309,8 +274,7 @@ function update(dt) {
 
         // platform movement
         if (p.type === 'moving_slow') {
-            let speed = Math.min(3.5, 1 + score * 0.00005);
-            p.vx = Math.sign(p.vx) * speed;
+            let speed = Math.min(3.5, 1 + score * 0.00005);p.vx = Math.sign(p.vx) * speed;
             p.x += p.vx;
         } else if (p.type === 'moving_fast') {
             let speed = Math.min(9, 3.5 + score * 0.00012);
@@ -319,7 +283,8 @@ function update(dt) {
         }
 
         if (p.x < 0) p.vx = Math.abs(p.vx);
-        if (p.x + PLATFORM_WIDTH > canvas.width) p.vx = -Math.abs(p.vx);});
+        if (p.x + PLATFORM_WIDTH > canvas.width) p.vx = -Math.abs(p.vx);
+    });
 
     // === CAMERA ===
     if (player.y > canvas.height / 2) {
@@ -354,9 +319,10 @@ function update(dt) {
         }
     });
 
-    // === SPAWN NEW ENEMIES ===
-    let maxEnemyY = Math.max(...enemies.map(e => e.y));
-    if (maxEnemyY < platforms[platforms.length - 1].y) {
+    // === SPAWN NEW ENEMIES ПО СКОРОСТИ ПРОГРЕССА ===
+    const spawnChance = 0.01 + score * 0.000001; // постепенно увеличиваем
+    if (Math.random() < spawnChance) {
+        const maxEnemyY = Math.max(...enemies.map(e => e.y), 0);
         const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
         const type = getEnemyTypeByScore();
         let vx = 0;
@@ -372,7 +338,7 @@ function update(dt) {
             size: 30,
             width: 30,
             height: 30,
-            hp: 1,
+            hp: 10, // урон настраиваем здесь
             damage: 10,
             lastShot: performance.now(),
             bullets: []
@@ -422,9 +388,7 @@ function draw() {
             }
             ctx.fillRect(itemX, itemY, 20, 20);
         }
-    });
-
-    // enemies
+    });// enemies
     enemies.forEach(e => {
         switch (e.type) {
             case 'static': ctx.fillStyle = '#ff0000'; break;
@@ -452,7 +416,8 @@ function draw() {
 }
 
 // =====================
-// GAME LOOP// =====================
+// GAME LOOP
+// =====================
 function gameLoop(t) {
     const dt = t - lastTime;
     lastTime = t;
