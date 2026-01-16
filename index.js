@@ -388,8 +388,7 @@ function update(dt) {
     // === ПРОВЕРКА GAME OVER ===
     if (player.hp <= 0 || player.y < -200) {
         alert('Game Over');
-        location.reloand();
-        return;
+        location.reload();
     }
 }
 
