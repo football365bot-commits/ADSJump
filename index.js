@@ -362,18 +362,35 @@ function update(dt) {
         }
     });
 
+  
     // === SPAWN NEW ENEMIES ===
-    let maxEnemyY = Math.max(...enemies.map(e => e.y));
-    if (maxEnemyY < platforms[platforms.length - 1].y) {
-        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+    function spawnEnemy() {
+        let x, y;
+        let safe = false;
+
+        // ищем координаты, чтобы не спавнилось на платформе
+        do {
+            x = Math.random() * (canvas.width - 30);
+            y = Math.random() * (canvas.height - 100) + 50; // верх/середина экрана
+            safe = true;
+
+            for (let p of platforms) {
+                if (y > p.y && y < p.y + PLATFORM_HEIGHT &&
+                    x + 30 > p.x && x < p.x + PLATFORM_WIDTH) {
+                    safe = false;
+                    break;
+                }
+            }
+        } while (!safe);
+
         const type = getEnemyTypeByScore();
         let vx = 0;
         if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
         if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
 
         enemies.push({
-            x: Math.random() * (canvas.width - 30),
-            y: maxEnemyY + gap,
+            x: x,
+            y: y,
             vx: vx,
             vy: 0,
             type: type,
@@ -387,9 +404,10 @@ function update(dt) {
         });
     }
 
-    if (player.y < -200) location.reload();
-}
-
+    // вызываем спавн по прогрессии score
+    if (enemies.length < Math.min(3 + Math.floor(score / 500), 10)) {
+        spawnEnemy();
+    }
 // =====================
 // DRAW
 // =====================
