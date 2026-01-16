@@ -274,12 +274,12 @@ function draw() {
 
     // player
     ctx.drawImage(
-        playerImage,
-        player.x,
-        canvas.height - player.y,
-        PLAYER_SIZE,
-        PLAYER_SIZE
-    );
+    playerImage,
+    player.x,
+    canvas.height - player.y,
+    PLAYER_SIZE,
+    PLAYER_SIZE
+);
     // bullets
     ctx.fillStyle = '#ffff00';
     bullets.forEach(b => {
