@@ -52,9 +52,9 @@ let lastShotTime = 0;
 // =====================
 const enemies = [];
 const ENEMY_MAX = {
-    static: { speed: 0, damage: 1 },
-    slow:   { speed: 3, damage: 2 },
-    fast:   { speed: 6, damage: 34 }
+    static: { speed: 0, damage: 1, hp: 5 },
+    slow:   { speed: 3, damage: 2, hp: 7 },
+    fast:   { speed: 6, damage: 4, hp: 10 }
 };
 
 
@@ -80,33 +80,6 @@ function getEnemySpawnCount(score) {
     return 1 + Math.floor(Math.random() * 3); // 1-3 врага
 }
 
-function generateInitialEnemies(count) {
-    let currentY = 150;
-    for (let i = 0; i < count; i++) {
-        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
-        const type = getEnemyTypeByScore();
-        let vx = 0;
-        if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
-        if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
-
-        enemies.push({
-            x: Math.random() * (canvas.width - 30),
-            y: currentY,
-            vx: vx,
-            vy: 0,
-            type: type,
-            size: 30,
-            width: 30,
-            height: 30,
-            hp: 1,
-            damage: 10,
-            lastShot: performance.now(),
-            bullets: []
-        });
-
-        currentY += gap;
-    }
-}
 
 
 // =====================
@@ -396,7 +369,8 @@ function update(dt) {
                 size: 30,
                 width: 30,
                 height: 30,
-                hp: 1,
+                hp: ENEMY_MAX[type].hp,
+                maxHp: ENEMY_MAX[type].hp,
                 damage: ENEMY_MAX[type].damage,
                 lastShot: performance.now(),
                 bullets: []
@@ -458,6 +432,18 @@ function draw() {
             case 'fast': ctx.fillStyle = '#ffff00'; break;
         }
         ctx.fillRect(e.x, canvas.height - e.y - e.size, e.size, e.size);
+
+        const hpPercent = e.hp / e.maxHp;
+        const hpBarWidth = e.size;
+        const hpBarHeight = 4;
+        
+        ctx.fillStyle = '#000';
+        ctx.fillRect(e.x, canvas.height - e.y - e.size 6, hpBarWidth, hpBarHeight);
+
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(e.x, canvas.height - e.y - e.size 6, hpBarWidth * hpPercent, hpBarHeight);
+
+
         
         ctx.fillStyle = '#ff00ff';
         e.bullets.forEach(b => {
