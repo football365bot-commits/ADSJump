@@ -19,7 +19,7 @@ const PLATFORM_HEIGHT = 15;
 const MIN_GAP = 120;
 const MAX_GAP = 160;
 const CAMERA_SPEED = 1.25;
-const BULLET_SPEED = -12;
+const BULLET_SPEED = 12;
 const BULLET_SIZE = 4;
 const FIRE_RATE = 150;
 // =====================
