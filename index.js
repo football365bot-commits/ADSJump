@@ -230,13 +230,14 @@ function update(dt) {
         enemy.x += enemy.vx;
         enemy.y += enemy.vy;
         
-        if (enemy.hp <= 0 || enemy.y > canvas.height + 50) 
+        if (enemy.hp <= 0 || enemy.y > canvas.height + 50) {
             enemy.active = false;
             return;
         }
 
         if (enemy.x < 0) enemy.vx = Math.abs(enemy.vx);
         if (enemy.x + enemy.size > canvas.width) enemy.vx = -Math.abs(enemy.vx);
+    });
 
         // === Враг стреляет по игроку ===
         let fireInterval = Math.max(MIN_FIRE_INTERVAL, MAX_FIRE_INTERVAL - score * 0.005);
