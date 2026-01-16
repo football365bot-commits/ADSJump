@@ -210,7 +210,9 @@ function update(dt) {
     player.y += player.vy;
 
     // === AUTO SHOOT ===
-    if (enemies.length > 0 && now - lastShotTime > FIRE_RATE) {
+    
+    const activeEnemies = enemies.filter(e => e.active);
+    if (activeEnemies.length > 0 && now - lastShotTime > FIRE_RATE) {
         bullets.push({
             x: player.x + PLAYER_SIZE / 2,
             y: player.y,
