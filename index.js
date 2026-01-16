@@ -395,8 +395,10 @@ function update(dt) {
     // === SPAWN NEW ENEMIES ===
     const cameraTop = player.y + canvas.height / 2;
 
-    if (score >= 4500) {
-        const spawnCount = getEnemySpawnCount(score);
+    if (score >= 4500 && now - lastEnemySpawn > ENEMY_SPAWN_INTERVAL) {
+        lastEnemySpawn = now;
+        
+        const spawnCount = getEnemySpawnCount(score)
 
         for (let j = 0; j < spawnCount; j++) {
             const enemy = enemies.find(e => !e.active);
