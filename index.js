@@ -76,8 +76,8 @@ function getItemForPlatform() {
     if (rand < 0.015) return 'trampoline';
     if (rand < 0.025) return 'bomb';
     if (rand < 0.040) return 'spikes';
-    if (rand < 0.065) return 'adrenaline';
-    if (rand < 0.099) return 'medkit';
+    if (rand < 0.050) return 'adrenaline';
+    if (rand < 0.075) return 'medkit';
     return null;                              // на многих платформах нет предмета
 }
 
