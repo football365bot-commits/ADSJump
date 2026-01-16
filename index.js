@@ -438,10 +438,10 @@ function draw() {
         const hpBarHeight = 4;
         
         ctx.fillStyle = '#000';
-        ctx.fillRect(e.x, canvas.height - e.y - e.size 6, hpBarWidth, hpBarHeight);
+        ctx.fillRect(e.x, canvas.height - e.y - e.size - 6, hpBarWidth, hpBarHeight);
 
         ctx.fillStyle = '#ff0000';
-        ctx.fillRect(e.x, canvas.height - e.y - e.size 6, hpBarWidth * hpPercent, hpBarHeight);
+        ctx.fillRect(e.x, canvas.height - e.y - e.size - 6, hpBarWidth * hpPercent, hpBarHeight);
 
 
         
