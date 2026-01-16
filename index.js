@@ -58,6 +58,34 @@ function getEnemyTypeByScore() {
     return 'fast';
 }
 
+function generateInitialEnemies(count) {
+    let currentY = 150;
+    for (let i = 0; i < count; i++) {
+        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+        const type = getEnemyTypeByScore();
+        let vx = 0;
+        if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
+        if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
+
+        enemies.push({
+            x: Math.random() * (canvas.width - 30),
+            y: currentY,
+            vx: vx,
+            vy: 0,
+            type: type,
+            size: 30,
+            width: 30,
+            height: 30,
+            hp: 1,
+            damage: 10
+        });
+
+        currentY += gap;
+    }
+}
+
+generateInitialEnemies(10);
+
 // =====================
 // PLAYER SKIN
 // =====================
@@ -132,8 +160,7 @@ function getPlatformTypeByScore() {
 }
 
 function generateInitialPlatforms(count) {
-    let currentY = 100;
-    for (let i = 0; i < count; i++) {
+    let currentY = 100;for (let i = 0; i < count; i++) {
         const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
         const type = getPlatformTypeByScore();
         let vx = 0;
@@ -156,7 +183,8 @@ generateInitialPlatforms(20);
 // =====================
 // UPDATE
 // =====================
-function update(dt) {const now = performance.now();
+function update(dt) {
+    const now = performance.now();
 
     // === PLAYER MOVEMENT ===
     player.x += inputX * 8;
@@ -189,42 +217,12 @@ function update(dt) {const now = performance.now();
         if (enemy.x < 0) enemy.vx = Math.abs(enemy.vx);
         if (enemy.x + enemy.size > canvas.width) enemy.vx = -Math.abs(enemy.vx);
 
-        // === Враг стреляет по игроку ===
-        if (performance.now() - enemy.lastShot > 500) { 
-            const dx = (player.x + PLAYER_SIZE / 2) - (enemy.x + enemy.size / 2);
-            const dy = (player.y + PLAYER_SIZE / 2) - (enemy.y + enemy.size / 2);
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            const speed = 6;
-
-            enemy.bullets.push({
-                x: enemy.x + enemy.size / 2,
-                y: enemy.y + enemy.size / 2,
-                vx: dx / dist * speed,
-                vy: dy / dist * speed,
-                size: 6
-            });
-
-            enemy.lastShot = performance.now();
-        }
-
-        // === Двигаем пули врага и проверяем попадания ===
-        for (let i = enemy.bullets.length - 1; i >= 0; i--) {
-            const b = enemy.bullets[i];
-            b.x += b.vx;
-            b.y += b.vy;
-
-            // коллизия с игроком (только пули!)
-            if (player.x + PLAYER_SIZE > b.x && player.x < b.x + b.size &&
-                player.y + PLAYER_SIZE > b.y && player.y < b.y + b.size) {
-                player.hp -= enemy.damage;
-                enemy.bullets.splice(i, 1);
-                continue;
-            }
-
-            // убираем пули за пределами экрана
-            if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
-                enemy.bullets.splice(i, 1);
-            }
+        // collision with player
+        if (player.x + PLAYER_SIZE > enemy.x &&
+            player.x < enemy.x + enemy.width &&
+            player.y + PLAYER_SIZE > enemy.y &&
+            player.y < enemy.y + enemy.height) {
+            player.hp -= enemy.damage;
         }
 
         // collision with bullets
@@ -274,7 +272,8 @@ function update(dt) {const now = performance.now();
 
         // platform movement
         if (p.type === 'moving_slow') {
-            let speed = Math.min(3.5, 1 + score * 0.00005);p.vx = Math.sign(p.vx) * speed;
+            let speed = Math.min(3.5, 1 + score * 0.00005);
+            p.vx = Math.sign(p.vx) * speed;
             p.x += p.vx;
         } else if (p.type === 'moving_fast') {
             let speed = Math.min(9, 3.5 + score * 0.00012);
@@ -283,8 +282,7 @@ function update(dt) {const now = performance.now();
         }
 
         if (p.x < 0) p.vx = Math.abs(p.vx);
-        if (p.x + PLATFORM_WIDTH > canvas.width) p.vx = -Math.abs(p.vx);
-    });
+        if (p.x + PLATFORM_WIDTH > canvas.width) p.vx = -Math.abs(p.vx);});
 
     // === CAMERA ===
     if (player.y > canvas.height / 2) {
@@ -319,10 +317,9 @@ function update(dt) {const now = performance.now();
         }
     });
 
-    // === SPAWN NEW ENEMIES ПО СКОРОСТИ ПРОГРЕССА ===
-    const spawnChance = 0.01 + score * 0.000001; // постепенно увеличиваем
-    if (Math.random() < spawnChance) {
-        const maxEnemyY = Math.max(...enemies.map(e => e.y), 0);
+    // === SPAWN NEW ENEMIES ===
+    let maxEnemyY = Math.max(...enemies.map(e => e.y));
+    if (maxEnemyY < platforms[platforms.length - 1].y) {
         const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
         const type = getEnemyTypeByScore();
         let vx = 0;
@@ -338,10 +335,8 @@ function update(dt) {const now = performance.now();
             size: 30,
             width: 30,
             height: 30,
-            hp: 10, // урон настраиваем здесь
-            damage: 10,
-            lastShot: performance.now(),
-            bullets: []
+            hp: 1,
+            damage: 10
         });
     }
 
@@ -388,7 +383,9 @@ function draw() {
             }
             ctx.fillRect(itemX, itemY, 20, 20);
         }
-    });// enemies
+    });
+
+    // enemies
     enemies.forEach(e => {
         switch (e.type) {
             case 'static': ctx.fillStyle = '#ff0000'; break;
@@ -396,16 +393,6 @@ function draw() {
             case 'fast': ctx.fillStyle = '#ffff00'; break;
         }
         ctx.fillRect(e.x, canvas.height - e.y - e.size, e.size, e.size);
-        
-        ctx.fillStyle = '#ff00ff';
-        e.bullets.forEach(b => {
-            ctx.fillRect(
-                b.x - b.size / 2, 
-                canvas.height - b.y - b.size / 2, 
-                b.size, 
-                b.size
-            );
-        });   
     });
 
     // HUD
@@ -416,8 +403,7 @@ function draw() {
 }
 
 // =====================
-// GAME LOOP
-// =====================
+// GAME LOOP// =====================
 function gameLoop(t) {
     const dt = t - lastTime;
     lastTime = t;
