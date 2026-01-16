@@ -182,10 +182,12 @@ function update(dt) {
         }
 
         // коллизия с платформой
-        if (player.y <= p.y + PLATFORM_HEIGHT &&
+        if (player.vy < 0 &&player.y <= p.y + PLATFORM_HEIGHT &&
             player.y >= p.y &&
             player.x + PLAYER_SIZE > p.x &&
             player.x < p.x + PLATFORM_WIDTH) {
+
+            if (p.type === 'broken' && p.used) return;
 
             player.vy = player.jumpForce;
 
