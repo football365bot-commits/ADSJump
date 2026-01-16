@@ -363,49 +363,49 @@ function update(dt) {
     });
 
   
-    // === SPAWN NEW ENEMIES ===
-    function spawnEnemy() {
-        let x, y;
-        let safe = false;
+// === SPAWN NEW ENEMIES ===
+function spawnEnemy() {
+    let x, y;
+    let safe = false;
 
-        // ищем координаты, чтобы не спавнилось на платформе
-        do {
-            x = Math.random() * (canvas.width - 30);
-            y = Math.random() * (canvas.height - 100) + 50; // верх/середина экрана
-            safe = true;
+    // ищем координаты, чтобы не спавнилось на платформе
+    do {
+        x = Math.random() * (canvas.width - 30);
+        y = Math.random() * (canvas.height - 100) + 50; // верх/середина экрана
+        safe = true;
 
-            for (let p of platforms) {
-                if (y > p.y && y < p.y + PLATFORM_HEIGHT &&
-                    x + 30 > p.x && x < p.x + PLATFORM_WIDTH) {
-                    safe = false;
-                    break;
-                }
+        for (let p of platforms) {
+            if (y > p.y && y < p.y + PLATFORM_HEIGHT &&
+                x + 30 > p.x && x < p.x + PLATFORM_WIDTH) {
+                safe = false;
+                break;
             }
-        } while (!safe);
+        }
+    } while (!safe);
 
-        const type = getEnemyTypeByScore();
-        let vx = 0;
-        if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
-        if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
+    const type = getEnemyTypeByScore();
+    let vx = 0;
+    if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
+    if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
 
-        enemies.push({
-            x: x,
-            y: y,
-            vx: vx,
-            vy: 0,
-            type: type,
-            size: 30,
-            width: 30,
-            height: 30,
-            hp: 1,
-            damage: 10,
-            lastShot: performance.now(),
-            bullets: []
-        });
-    }
+    enemies.push({
+        x: x,
+        y: y,
+        vx: vx,
+        vy: 0,
+        type: type,
+        size: 30,
+        width: 30,
+        height: 30,
+        hp: 1,
+        damage: 10,
+        lastShot: performance.now(),
+        bullets: []
+    });
+}
 
-    // вызываем спавн по прогрессии score
-    if (enemies.length < Math.min(3 + Math.floor(score / 500), 10)) {
+// вызываем спавн по прогрессии score
+if (enemies.length < Math.min(3 + Math.floor(score / 500), 10)) {
         spawnEnemy();
     }
 // =====================
