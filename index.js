@@ -389,6 +389,7 @@ function update(dt) {
     if (player.hp <= 0 || player.y < -200) {
         alert('Game Over');
         location.reloand();
+        return;
     }
 }
 
