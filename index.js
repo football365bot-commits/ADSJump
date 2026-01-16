@@ -51,12 +51,33 @@ let lastShotTime = 0;
 // ENEMIES
 // =====================
 const enemies = [];
+const ENEMY_MAX = {
+    static: { speed: 0, damage: 10 },
+    slow:   { speed: 3, damage: 20 },
+    fast:   { speed: 6, damage: 30 }
+};
 
-function getEnemyTypeByScore() {
+
+function getEnemyTypeByScore(score) {
     const rand = Math.random();
-    if (rand < 0.5) return 'static';
-    if (rand < 0.8) return 'slow';
-    return 'fast';
+
+    if (score < 5000) {
+        if (rand < 0.7) return 'static';
+        return 'slow';
+    } else if (score < 20000) {
+        if (rand < 0.5) return 'static';
+        if (rand < 0.85) return 'slow';
+        return 'fast';
+    } else {
+        if (rand < 0.3) return 'static';
+        if (rand < 0.7) return 'slow';
+        return 'fast';
+    }
+}
+function getEnemySpawnCount(score) {
+    if (score < 5000) return 1;
+    if (score < 20000) return Math.random() < 0.5 ? 1 : 2;
+    return 1 + Math.floor(Math.random() * 3); // 1-3 врага
 }
 
 function generateInitialEnemies(count) {
@@ -353,43 +374,36 @@ function update(dt) {
     });
 
     // === SPAWN NEW ENEMIES ===
-    // === RECYCLE ENEMIES (как платформы) ===
-    if (score >= 10000) {
-        let maxEnemyY;
-        if (enemies.length > 0) {
-            maxEnemyY = Math.max(...enemies.map(e => e.y));
-        } else {
-            maxEnemyY = Math.max(...platforms.map(p => p.y)) + ENEMY_RESPAWN_OFFSET;
+     if (score >= 1500) { // старт спавна после 1500 очков
+        let maxEnemyY = enemies.length > 0 
+            ? Math.max(...enemies.map(e => e.y))
+            : Math.max(...platforms.map(p => p.y)) + ENEMY_RESPAWN_OFFSET;
+
+        const spawnCount = getEnemySpawnCount(score);
+
+        for (let j = 0; j < spawnCount; j++) {
+            const type = getEnemyTypeByScore(score);
+            let vx = 0;
+            if (type === 'slow') vx = Math.random() < 0.5 ? ENEMY_MAX.slow.speed : -ENEMY_MAX.slow.speed;
+            if (type === 'fast') vx = Math.random() < 0.5 ? ENEMY_MAX.fast.speed : -ENEMY_MAX.fast.speed;
+
+            enemies.push({
+                x: Math.random() * (canvas.width - 30),
+                y: maxEnemyY + j * 40 + ENEMY_RESPAWN_OFFSET, // небольшое смещение по Y
+                vx: vx,
+                vy: 0,
+                type: type,
+                size: 30,
+                width: 30,
+                height: 30,
+                hp: 1,
+                damage: ENEMY_MAX[type].damage,
+                lastShot: performance.now(),
+                bullets: []
+            });
         }
-            
-        enemies.forEach((e, i) => {
-            if (e.y < -e.size) {
-                const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
-                const type = getEnemyTypeByScore();
-
-                let vx = 0;
-                if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
-                if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
-
-                enemies[i] = {
-                    x: Math.random() * (canvas.width - 30),
-                    y: maxEnemyY + gap + ENEMY_RESPAWN_OFFSET,
-                    vx: vx,
-                    vy: 0,
-                    type: type,
-                    size: 30,
-                    width: 30,
-                    height: 30,
-                    hp: 1,
-                    damage: 10,
-                    lastShot: performance.now(),
-                    bullets: []
-                };
-
-                maxEnemyY = enemies[i].y;
-            }
-        });
-    }       
+    }
+       
 
     if (player.y < -200) location.reload();
 }
