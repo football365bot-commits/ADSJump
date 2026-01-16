@@ -53,9 +53,9 @@ const enemies = [];
 
 function getEnemyTypeByScore() {
     const rand = Math.random();
-    if (rand < 0.005) return 'static';
-    if (rand < 0.008) return 'slow';
-    return 'fast';
+    if (rand < 0.001) return 'static';
+    if (rand < 0.0008) return 'slow';
+    if (rand < 0.0005) return 'fast';
 }
 
 function generateInitialEnemies(count) {
