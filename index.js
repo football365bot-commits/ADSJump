@@ -404,7 +404,9 @@ function draw() {
             case 'moving_slow': ctx.fillStyle = '#00ffff'; break;
             case 'moving_fast': ctx.fillStyle = '#ff00ff'; break;
         }
-        ctx.fillRect(p.x, canvas.height - p.y, PLATFORM_WIDTH, PLATFORM_HEIGHT);if (p.item) {
+        ctx.fillRect(p.x, canvas.height - p.y, PLATFORM_WIDTH, PLATFORM_HEIGHT);
+
+        if (p.item) {
             const itemX = p.x + PLATFORM_WIDTH / 2 - 10;
             const itemY = canvas.height - p.y - 20;
             switch (p.item) {
