@@ -55,7 +55,6 @@ let lastShotTime = 0;
 // =====================
 // ENEMIES
 // =====================
-const enemies = [];
 const ENEMY_MAX = {
     static: { speed: 0, damage: 1, hp: 5 },
     slow:   { speed: 3, damage: 2, hp: 7 },
@@ -229,6 +228,8 @@ function update(dt) {
     enemies.forEach((enemy, eIndex) => {
         if (!enemy.active) return;
         enemy.x += enemy.vx;
+        if (enemy.hp <= 0 || enemy.y > canvas.height + 50) enemy.active = false;
+        return;
 
         if (enemy.x < 0) enemy.vx = Math.abs(enemy.vx);
         if (enemy.x + enemy.size > canvas.width) enemy.vx = -Math.abs(enemy.vx);
