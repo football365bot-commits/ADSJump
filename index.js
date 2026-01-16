@@ -51,42 +51,15 @@ let lastShotTime = 0;
 // =====================
 const enemies = [];
 
+// === ПРОГРЕССИЯ ВРАГОВ ПО SCORE ===
 function getEnemyTypeByScore() {
+    const progress = score / 1000; // прогресс по очкам
     const rand = Math.random();
-    if (rand < 0.001) return 'static';
-    if (rand < 0.0008) return 'slow';
-    if (rand < 0.0005) return 'fast';
+
+    if (rand < 0.5 - Math.min(progress * 0.02, 0.4)) return 'static';
+    if (rand < 0.8 - Math.min(progress * 0.1, 0.5)) return 'slow';
+    return 'fast';
 }
-
-function generateInitialEnemies(count) {
-    let currentY = 150;
-    for (let i = 0; i < count; i++) {
-        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
-        const type = getEnemyTypeByScore();
-        let vx = 0;
-        if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
-        if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
-
-        enemies.push({
-            x: Math.random() * (canvas.width - 30),
-            y: currentY,
-            vx: vx,
-            vy: 0,
-            type: type,
-            size: 30,
-            width: 30,
-            height: 30,
-            hp: 1,
-            damage: 1,
-            lastShot: performance.now(),
-            bullets: []
-        });
-
-        currentY += gap;
-    }
-}
-
-generateInitialEnemies(10);
 
 // =====================
 // PLAYER SKIN
@@ -113,8 +86,6 @@ const platforms = [];
 // =====================
 // ITEMS
 // =====================
-const itemTypes = ['trampoline', 'drone', 'rocket', 'bomb', 'spikes', 'medkit', 'adrenaline'];
-
 function getItemForPlatform() {
     const rand = Math.random();
     if (rand < 0.004) return 'rocket';
@@ -159,8 +130,11 @@ function getPlatformTypeByScore() {
     if (rand < normalChance + brokenChance) return 'broken';
     if (rand < normalChance + brokenChance + movingSlowChance) return 'moving_slow';
     return 'moving_fast';
-}function generateInitialPlatforms(count) {
-    let currentY = 100;for (let i = 0; i < count; i++) {
+}
+
+function generateInitialPlatforms(count) {
+    let currentY = 100;
+    for (let i = 0; i < count; i++) {
         const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
         const type = getPlatformTypeByScore();
         let vx = 0;
@@ -180,8 +154,7 @@ function getPlatformTypeByScore() {
 }
 generateInitialPlatforms(20);
 
-// =====================
-// UPDATE
+// =====================// UPDATE
 // =====================
 function update(dt) {
     const now = performance.now();
@@ -213,12 +186,10 @@ function update(dt) {
     // === ENEMIES UPDATE ===
     enemies.forEach((enemy, eIndex) => {
         enemy.x += enemy.vx;
-
         if (enemy.x < 0) enemy.vx = Math.abs(enemy.vx);
         if (enemy.x + enemy.size > canvas.width) enemy.vx = -Math.abs(enemy.vx);
 
-        // === Враг стреляет по игроку ===
-        if (performance.now() - enemy.lastShot > 500) { // просто время между выстрелами
+        if (performance.now() - enemy.lastShot > 500) {
             const dx = (player.x + PLAYER_SIZE / 2) - (enemy.x + enemy.size / 2);
             const dy = (player.y + PLAYER_SIZE / 2) - (enemy.y + enemy.size / 2);
             const dist = Math.sqrt(dx*dx + dy*dy);
@@ -235,13 +206,11 @@ function update(dt) {
             enemy.lastShot = performance.now();
         }
 
-        // === Двигаем пули врага и проверяем попадания ===
         for (let i = enemy.bullets.length - 1; i >= 0; i--) {
             const b = enemy.bullets[i];
             b.x += b.vx;
             b.y += b.vy;
 
-            // коллизия с игроком
             if (player.x + PLAYER_SIZE > b.x && player.x < b.x + b.size &&
                 player.y + PLAYER_SIZE > b.y && player.y < b.y + b.size) {
                 player.hp -= enemy.damage;
@@ -249,18 +218,11 @@ function update(dt) {
                 continue;
             }
 
-            // убираем пули за пределами экрана
-            if (
-                b.x < 0 ||
-                b.x > canvas.width ||
-                b.y < 0 ||
-                b.y > canvas.height
-            ) {
+            if (b.x < 0  b.x > canvas.width  b.y < 0 || b.y > canvas.height) {
                 enemy.bullets.splice(i, 1);
             }
         }
 
-        // collision with bullets
         for (let i = bullets.length - 1; i >= 0; i--) {
             if (bullets[i].x > enemy.x && bullets[i].x < enemy.x + enemy.width &&
                 bullets[i].y > enemy.y && bullets[i].y < enemy.y + enemy.height) {
@@ -279,7 +241,6 @@ function update(dt) {
             return;
         }
 
-        // collision with player
         if (player.vy < 0 &&
             player.y <= p.y + PLATFORM_HEIGHT &&
             player.y >= p.y &&
@@ -305,7 +266,6 @@ function update(dt) {
             }
         }
 
-        // platform movement
         if (p.type === 'moving_slow') {
             let speed = Math.min(3.5, 1 + score * 0.00005);
             p.vx = Math.sign(p.vx) * speed;
@@ -317,7 +277,8 @@ function update(dt) {
         }
 
         if (p.x < 0) p.vx = Math.abs(p.vx);
-        if (p.x + PLATFORM_WIDTH > canvas.width) p.vx = -Math.abs(p.vx);});
+        if (p.x + PLATFORM_WIDTH > canvas.width) p.vx = -Math.abs(p.vx);
+    });
 
     // === CAMERA ===
     if (player.y > canvas.height / 2) {
@@ -352,10 +313,9 @@ function update(dt) {
         }
     });
 
-    // === SPAWN NEW ENEMIES ===
-    let maxEnemyY = Math.max(...enemies.map(e => e.y));
-    if (maxEnemyY < platforms[platforms.length - 1].y) {
-        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+    // === SPAWN ENEMIES ПО SCORE ===
+    const spawnChance = 0.01 + score * 0.00001;
+    if (Math.random() < spawnChance) {
         const type = getEnemyTypeByScore();
         let vx = 0;
         if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
@@ -363,15 +323,15 @@ function update(dt) {
 
         enemies.push({
             x: Math.random() * (canvas.width - 30),
-            y: maxEnemyY + gap,
+            y: player.y + canvas.height + 50,
             vx: vx,
             vy: 0,
             type: type,
             size: 30,
             width: 30,
             height: 30,
-            hp: 1,
-            damage: 10,
+            hp: type === 'fast' ? 3 : 1,
+            damage: type === 'fast' ? 15 : 10,
             lastShot: performance.now(),
             bullets: []
         });
@@ -388,14 +348,11 @@ function draw() {
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // player
     ctx.drawImage(playerImage, player.x, canvas.height - player.y, PLAYER_SIZE, PLAYER_SIZE);
 
-    // bullets
     ctx.fillStyle = '#ffff00';
     bullets.forEach(b => ctx.fillRect(b.x - BULLET_SIZE / 2, canvas.height - b.y, BULLET_SIZE, BULLET_SIZE));
 
-    // platforms
     platforms.forEach(p => {
         if (p.type === 'broken' && p.used) return;
         switch (p.type) {
@@ -422,7 +379,6 @@ function draw() {
         }
     });
 
-    // enemies
     enemies.forEach(e => {
         switch (e.type) {
             case 'static': ctx.fillStyle = '#ff0000'; break;
@@ -430,19 +386,14 @@ function draw() {
             case 'fast': ctx.fillStyle = '#ffff00'; break;
         }
         ctx.fillRect(e.x, canvas.height - e.y - e.size, e.size, e.size);
-        
+
         ctx.fillStyle = '#ff00ff';
-        e.bullets.forEach(b => {
-            ctx.fillRect(
-                b.x - b.size / 2, 
-                canvas.height - b.y - b.size / 2, 
-                b.size, 
-                b.size
-            );
-        });   
+        e.bullets.forEach(b => ctx.fillRect(
+            b.x - b.size / 2,canvas.height - b.y - b.size / 2,
+            b.size, b.size
+        ));
     });
 
-    // HUD
     ctx.fillStyle = '#fff';
     ctx.font = '20px Arial';
     ctx.fillText(`Score: ${score}`, 20, 30);
@@ -450,7 +401,8 @@ function draw() {
 }
 
 // =====================
-// GAME LOOP// =====================
+// GAME LOOP
+// =====================
 function gameLoop(t) {
     const dt = t - lastTime;
     lastTime = t;
