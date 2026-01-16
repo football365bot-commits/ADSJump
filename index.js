@@ -33,7 +33,6 @@ const ENEMY_FIRE_MIN_INTERVAL = 150;
 // =====================
 let lastTime = 0;
 let score = 0;
-let gameOver = false;
 
 
 // =====================
@@ -387,9 +386,9 @@ function update(dt) {
        
 
     // === ПРОВЕРКА GAME OVER ===
-    if ((player.hp <= 0 || player.y < -200) && !gameOverShown) {
+    if (player.hp <= 0 || player.y < -200) {
         alert('Game Over');
-        gameOver = true;
+        location.reloand();
     }
 }
 
