@@ -23,6 +23,10 @@ const BULLET_SPEED = 12;
 const BULLET_SIZE = 4;
 const FIRE_RATE = 150;
 const ENEMY_RESPAWN_OFFSET = 300;
+const ENEMY_FIRE_MAX_INTERVAL = 800;
+const ENEMY_FIRE_MIN_INTERVAL = 150;
+
+
 
 // =====================
 // GAME STATE
@@ -189,7 +193,7 @@ function update(dt) {
     player.y += player.vy;
 
     // === AUTO SHOOT ===
-    if (now - lastShotTime > FIRE_RATE) {
+    if (enemies.length > 0 && now - lastShotTime > FIRE_RATE) {
         bullets.push({
             x: player.x + PLAYER_SIZE / 2,
             y: player.y,
@@ -197,7 +201,6 @@ function update(dt) {
         });
         lastShotTime = now;
     }
-
     // === BULLETS UPDATE ===
     for (let i = bullets.length - 1; i >= 0; i--) {
         bullets[i].y += bullets[i].vy;
@@ -212,7 +215,9 @@ function update(dt) {
         if (enemy.x + enemy.size > canvas.width) enemy.vx = -Math.abs(enemy.vx);
 
         // === Враг стреляет по игроку ===
-        if (performance.now() - enemy.lastShot > 500) { // просто время между выстрелами
+        let fireInterval = Math.max(MIN_FIRE_INTERVAL, MAX_FIRE_INTERVAL - score * 0.005);
+
+        if (performance.now() - enemy.lastShot > fireInterval) {
             const dx = (player.x + PLAYER_SIZE / 2) - (enemy.x + enemy.size / 2);
             const dy = (player.y + PLAYER_SIZE / 2) - (enemy.y + enemy.size / 2);
             const dist = Math.sqrt(dx*dx + dy*dy);
@@ -347,7 +352,7 @@ function update(dt) {
     });
 
     // === SPAWN NEW ENEMIES ===
-     if (score >= 1500) { // старт спавна после 1500 очков
+     if (score >= 4500) { // старт спавна после 1500 очков
         let maxEnemyY = enemies.length > 0 
             ? Math.max(...enemies.map(e => e.y))
             : Math.max(...platforms.map(p => p.y)) + ENEMY_RESPAWN_OFFSET;
