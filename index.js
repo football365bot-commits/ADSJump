@@ -371,7 +371,9 @@ function update(dt) {
             width: 30,
             height: 30,
             hp: 1,
-            damage: 10
+            damage: 10,
+            lastShot: performance.now(),
+            bullets: []
         });
     }
 
