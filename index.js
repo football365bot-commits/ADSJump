@@ -389,7 +389,7 @@ function update(dt) {
     // === ПРОВЕРКА GAME OVER ===
     if ((player.hp <= 0 || player.y < -200) && !gameOverShown) {
         alert('Game Over');
-        gameOverShown = true;
+        gameOver = true;
     }
 }
 
