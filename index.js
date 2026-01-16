@@ -37,6 +37,14 @@ const player = {
     hp: 100
 };
 // =====================
+// BULLETS
+// =====================
+const bullets = [];
+const BULLET_SPEED = 12;
+const BULLET_RADIUS = 4;
+let lastShotTime = 0;
+const FIRE_RATE = 150; // мс между выстрелами
+// =====================
 // PLAYER SKIN
 // =====================
 const playerImage = new Image();
@@ -140,6 +148,15 @@ generateInitialPlatforms(20);
 // =====================
 function update(dt) {
     const now = performance.now();
+    // === AUTO SHOOT ===
+    if (now - lastShotTime > FIRE_RATE) {
+        bullets.push({
+            x: player.x + PLAYER_SIZE / 2,
+            y: player.y + PLAYER_SIZE,
+            vy: BULLET_SPEED
+        });
+        lastShotTime = now;
+    }
 
     player.x += inputX * 8;
     if (player.x < -PLAYER_SIZE) player.x = canvas.width;
@@ -147,6 +164,15 @@ function update(dt) {
 
     player.vy += GRAVITY;
     player.y += player.vy;
+
+    // === BULLETS UPDATE ===
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        bullets[i].y += bullets[i].vy;
+
+        if (bullets[i].y > canvas.height + 100) {
+            bullets.splice(i, 1);
+        }
+    }
 
     platforms.forEach((p, index) => {// удаляем временную платформу, если время вышло
         if (p.temp && now - p.spawnTime > p.lifeTime) {
@@ -248,13 +274,22 @@ function draw() {
 
     // player
     ctx.drawImage(
-    playerImage,
-    player.x,
-    canvas.height - player.y,
-    PLAYER_SIZE,
-    PLAYER_SIZE
-);
-
+        playerImage,
+        player.x,
+        canvas.height - player.y,
+        PLAYER_SIZE,
+        PLAYER_SIZE
+    );
+    // bullets
+    ctx.fillStyle = '#ffff00';
+    bullets.forEach(b => {
+        ctx.fillRect(
+            b.x - BULLET_SIZE / 2,
+            canvas.height - b.y,
+            BULLET_SIZE,
+            BULLET_SIZE
+        );
+    });
     // platforms
     platforms.forEach(p => {
         if (p.type === 'broken' && p.used) return;
