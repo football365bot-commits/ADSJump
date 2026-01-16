@@ -87,7 +87,6 @@ function generateInitialEnemies(count) {
     }
 }
 
-generateInitialEnemies(10);
 
 // =====================
 // PLAYER SKIN
