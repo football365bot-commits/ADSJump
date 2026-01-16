@@ -52,9 +52,9 @@ let lastShotTime = 0;
 // =====================
 const enemies = [];
 const ENEMY_MAX = {
-    static: { speed: 0, damage: 10 },
-    slow:   { speed: 3, damage: 20 },
-    fast:   { speed: 6, damage: 30 }
+    static: { speed: 0, damage: 1 },
+    slow:   { speed: 3, damage: 2 },
+    fast:   { speed: 6, damage: 34 }
 };
 
 
