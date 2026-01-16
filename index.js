@@ -233,6 +233,7 @@ function update(dt) {
         if (enemy.hp <= 0 || enemy.y > canvas.height + 50) 
             enemy.active = false;
             return;
+        }
 
         if (enemy.x < 0) enemy.vx = Math.abs(enemy.vx);
         if (enemy.x + enemy.size > canvas.width) enemy.vx = -Math.abs(enemy.vx);
