@@ -226,7 +226,8 @@ function update(dt) {
 
     // === ENEMIES UPDATE ===
     enemies.forEach((enemy, eIndex) => {
-        if (!enemy.active) return;
+        if (!enemy.active)    
+            return;
         enemy.x += enemy.vx;
         if (enemy.hp <= 0 || enemy.y > canvas.height + 50) enemy.active = false;
             return;
