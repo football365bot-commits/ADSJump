@@ -169,7 +169,9 @@ function getPlatformTypeByScore() {
     if (rand < normalChance) return 'normal';
     if (rand < normalChance + brokenChance) return 'broken';
     if (rand < normalChance + brokenChance + movingSlowChance) return 'moving_slow';
-    return 'moving_fast';}function generateInitialPlatforms(count) {
+    return 'moving_fast';
+}
+function generateInitialPlatforms(count) {
     let currentY = 100;for (let i = 0; i < count; i++) {
         const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
         const type = getPlatformTypeByScore();
