@@ -77,7 +77,7 @@ function generateInitialEnemies(count) {
             width: 30,
             height: 30,
             hp: 1,
-            damage: 10
+            damage: 10,
             lastShot: perfomence.now(),
             bullets: []
         });
@@ -252,17 +252,14 @@ function update(dt) {
             }
 
             // убираем пули за пределами экрана
-            if (b.x < 0  b.x > canvas.width  b.y < 0 || b.y > canvas.height) {
+            if (
+                b.x < 0 ||
+                b.x > canvas.width ||
+                b.y < 0 ||
+                b.y > canvas.height
+            ) {
                 enemy.bullets.splice(i, 1);
             }
-        }
-
-        // collision with player
-        if (player.x + PLAYER_SIZE > enemy.x &&
-            player.x < enemy.x + enemy.width &&
-            player.y + PLAYER_SIZE > enemy.y &&
-            player.y < enemy.y + enemy.height) {
-            player.hp -= enemy.damage;
         }
 
         // collision with bullets
@@ -434,10 +431,15 @@ function draw() {
         }
         ctx.fillRect(e.x, canvas.height - e.y - e.size, e.size, e.size);
         
-    });
-    enemy.bullets.forEach(b => {
         ctx.fillStyle = '#ff00ff';
-        ctx.fillRect(b.x - b.size / 2, canvas.height - b.y - b.size / 2, b.size, b.size);
+        enemy.bullets.forEach(b => {
+            ctx.fillRect(
+                b.x - b.size / 2, 
+                canvas.height - b.y - b.size / 2, 
+                b.size, 
+                b.size
+            );
+        });   
     });
 
     // HUD
