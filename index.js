@@ -36,7 +36,11 @@ const player = {
     jumpForce: BASE_JUMP_FORCE,
     hp: 100
 };
-
+// =====================
+// PLAYER SKIN
+// =====================
+const playerImage = new Image();
+playerImage.src = 'jumper.png'; // путь к файлу
 // =====================
 // INPUT
 // =====================
@@ -243,8 +247,13 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // player
-    ctx.fillStyle = 'yellow';
-    ctx.fillRect(player.x, canvas.height - player.y, PLAYER_SIZE, PLAYER_SIZE);
+    ctx.drawImage(
+    playerImage,
+    player.x,
+    canvas.height - player.y,
+    PLAYER_SIZE,
+    PLAYER_SIZE
+);
 
     // platforms
     platforms.forEach(p => {
