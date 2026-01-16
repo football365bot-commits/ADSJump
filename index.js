@@ -170,7 +170,7 @@ function update(dt) {
     for (let i = bullets.length - 1; i >= 0; i--) {
         bullets[i].y += bullets[i].vy;
 
-        if (bullets[i].y > canvas.height + 100) {
+        if (bullets[i].y > canvas.height + 100 || bullets[i].y < -100) {
             bullets.splice(i, 1);
         }
     }
