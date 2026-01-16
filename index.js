@@ -28,6 +28,8 @@ const ENEMY_FIRE_MIN_INTERVAL = 150;
 
 
 
+let lastEnemySpawn = 0;
+const ENEMY_SPAWN_INTERVAL = 800;
 // =====================
 // GAME STATE
 // =====================
@@ -232,7 +234,14 @@ function update(dt) {
     // === BULLETS UPDATE ===
     for (let i = bullets.length - 1; i >= 0; i--) {
         bullets[i].y += bullets[i].vy;
-        if (bullets[i].y > canvas.height + 100 || bullets[i].y < -100) bullets.splice(i, 1);
+        const cameraBottom = player.y - canvas.height / 2;
+        const cameraTop = player.y + canvas.height / 2;
+
+        if (
+        bullets[i].y < cameraBottom - 100 ||
+        bullets[i].y > cameraTop + 100
+        ) {
+        bullets.splice(i, 1);
     }
 
     // === ENEMIES UPDATE ===
@@ -243,8 +252,11 @@ function update(dt) {
         enemy.x += enemy.vx;
         enemy.y += enemy.vy;
 
-        if (enemy.hp <= 0 || enemy.y > canvas.height + 50) {
+        const cameraBottom = player.y - canvas.height / 2;
+
+        if (enemy.hp <= 0 || enemy.y < cameraBottom - 100) {
             enemy.active = false;
+            enemy.bullets = [];
             return;
         }
 
