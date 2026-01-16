@@ -49,16 +49,22 @@ let lastShotTime = 0;
 // =====================
 const enemies = [];
 
-function spawnEnemy() {
-    const typeRand = Math.random();
-    let type = 'static';
+function spawnEnemy(type = null) {
+    if (!type) {
+        const typeRand = Math.random();
+        if (typeRand < 0.5) type = 'static';
+        else if (typeRand < 0.8) type = 'slow';
+        else type = 'fast';
+    }
+
     let vx = 0;
+    if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
+    if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
 
-    if (typeRand < 0.5) type = 'static';
-    else if (typeRand < 0.8) { type = 'slow'; vx = Math.random() < 0.5 ? 1 : -1; }
-    else { type = 'fast'; vx = Math.random() < 0.5 ? 3 : -3; }
+    // Спавним врага над камерой, не на фиксированной линии
+    const y = player.y + canvas.height + Math.random() * 200; // чуть выше верхнего края
+    const x = Math.random() * (canvas.width - 40);
 
-    enemies.push({
         x: Math.random() * (canvas.width - 40),
         y: canvas.height - 50,
         vx: vx,
