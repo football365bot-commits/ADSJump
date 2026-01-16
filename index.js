@@ -71,8 +71,8 @@ const itemTypes = ['trampoline', 'drone', 'rocket', 'bomb', 'spikes', 'medkit', 
 
 function getItemForPlatform() {
     const rand = Math.random();
-    if (rand < 0.003) return 'rocket';        // редкий
-    if (rand < 0.007) return 'drone';         // чуть чаще
+    if (rand < 0.004) return 'rocket';        // редкий
+    if (rand < 0.008) return 'drone';         // чуть чаще
     if (rand < 0.015) return 'trampoline';
     if (rand < 0.025) return 'bomb';
     if (rand < 0.040) return 'spikes';
