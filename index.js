@@ -78,7 +78,7 @@ function generateInitialEnemies(count) {
             height: 30,
             hp: 1,
             damage: 10,
-            lastShot: perfomence.now(),
+            lastShot: perfomance.now(),
             bullets: []
         });
 
@@ -432,7 +432,7 @@ function draw() {
         ctx.fillRect(e.x, canvas.height - e.y - e.size, e.size, e.size);
         
         ctx.fillStyle = '#ff00ff';
-        enemy.bullets.forEach(b => {
+        e.bullets.forEach(b => {
             ctx.fillRect(
                 b.x - b.size / 2, 
                 canvas.height - b.y - b.size / 2, 
