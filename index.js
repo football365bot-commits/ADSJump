@@ -203,13 +203,24 @@ function update(dt) {
         }
     }
     // Пример: 0.5% шанс за каждый апдейт создать врага
-    if (Math.random() < 0.10) {
+    
+    if (Math.random() < 0.05) spawnEnemy(); // static
+    if (Math.random() < 0.03) spawnEnemy(); // slow
+    if (Math.random() < 0.01) spawnEnemy(); {// fast
         spawnEnemy();
     }
     // === ENEMIES UPDATE ===
     enemies.forEach((enemy, eIndex) => {
         enemy.y += enemy.vy;
         enemy.x += enemy.vx;
+
+         // враги двигаются вместе с камерой
+        if (player.y === canvas.height / 2) { // если игрок на верхней позиции
+            const delta = 0; // не движемся, можно убрать
+        } else {
+            const delta = (player.y - canvas.height / 2) * CAMERA_SPEED;
+            enemy.y -= delta; // враги смещаются вместе с платформами
+        }
 
         // проверка коллизии с игроком
         if (player.x + PLAYER_SIZE > enemy.x &&
