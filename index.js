@@ -202,6 +202,10 @@ function update(dt) {
             bullets.splice(i, 1);
         }
     }
+    // Пример: 0.5% шанс за каждый апдейт создать врага
+    if (Math.random() < 0.10) {
+        spawnEnemy();
+    }
     // === ENEMIES UPDATE ===
     enemies.forEach((enemy, eIndex) => {
         enemy.y += enemy.vy;
