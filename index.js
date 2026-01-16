@@ -201,8 +201,8 @@ function update(dt) {
                     case 'rocket': player.vy += 75; break;
                     case 'spikes': player.hp -= 1; break;
                     case 'bomb': player.hp -= 5; break;
-                    case 'medkit': player.hp = Math.min(player.hp + 1, 100);
-                    case 'adrenaline': player.hp = Math.min(player.hp + 5, 100);
+                    case 'medkit': player.hp = Math.min(player.hp + 1, 100); break;
+                    case 'adrenaline': player.hp = Math.min(player.hp + 5, 100); break;
                 }
                 p.item = null;
             }
