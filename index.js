@@ -22,6 +22,7 @@ const CAMERA_SPEED = 1.25;
 const BULLET_SPEED = 12;
 const BULLET_SIZE = 4;
 const FIRE_RATE = 150;
+const ENEMY_RESPAWN_OFFSET = 300;
 
 // =====================
 // GAME STATE
@@ -353,29 +354,36 @@ function update(dt) {
     });
 
     // === SPAWN NEW ENEMIES ===
+    // === RECYCLE ENEMIES (как платформы) ===
     let maxEnemyY = Math.max(...enemies.map(e => e.y));
-    if (maxEnemyY < platforms[platforms.length - 1].y) {
-        const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
-        const type = getEnemyTypeByScore();
-        let vx = 0;
-        if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
-        if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
 
-        enemies.push({
-            x: Math.random() * (canvas.width - 30),
-            y: maxEnemyY + gap,
-            vx: vx,
-            vy: 0,
-            type: type,
-            size: 30,
-            width: 30,
-            height: 30,
-            hp: 1,
-            damage: 10,
-            lastShot: performance.now(),
-            bullets: []
-        });
-    }
+    enemies.forEach((e, i) => {
+        if (e.y < -e.size) {
+            const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+            const type = getEnemyTypeByScore();
+
+            let vx = 0;
+            if (type === 'slow') vx = Math.random() < 0.5 ? 1 : -1;
+            if (type === 'fast') vx = Math.random() < 0.5 ? 3 : -3;
+
+            enemies[i] = {
+                x: Math.random() * (canvas.width - 30),
+                y: maxEnemyY + gap + ENEMY_RESPAWN_OFFSET,
+                vx: vx,
+                vy: 0,
+                type: type,
+                size: 30,
+                width: 30,
+                height: 30,
+                hp: 1,
+                damage: 10,
+                lastShot: performance.now(),
+                bullets: []
+            };
+
+            maxEnemyY = enemies[i].y;
+        }
+    });
 
     if (player.y < -200) location.reload();
 }
