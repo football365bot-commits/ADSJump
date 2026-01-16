@@ -229,7 +229,7 @@ function update(dt) {
         if (!enemy.active) return;
         enemy.x += enemy.vx;
         enemy.y += enemy.vy;
-        
+    
         if (enemy.hp <= 0 || enemy.y > canvas.height + 50) {
             enemy.active = false;
             return;
