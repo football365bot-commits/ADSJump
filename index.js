@@ -272,7 +272,7 @@ function update(dt) {
                 continue;
             }
 
-            if (b.x < 0  b.x > canvas.width  b.y < 0 || b.y > canvas.height) {
+            if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
                 enemy.bullets.splice(i, 1);
             }
         }
