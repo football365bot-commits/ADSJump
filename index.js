@@ -19,20 +19,16 @@ const PLATFORM_HEIGHT = 15;
 const MIN_GAP = 120;
 const MAX_GAP = 160;
 const CAMERA_SPEED = 1.25;
-
-const BULLET_SPEED = 12; // скорость пуль игрока
-const BULLET_DAMAGE = 10; // урон пуль игрока
-const FIRE_RATE = 150;    // задержка между выстрелами игрока
-
-const ENEMY_RESPAWN_OFFSET = 300;
+const BULLET_SPEED = 12;
+const BULLET_SIZE = 4;
+const FIRE_RATE = 150;
 
 const ENEMY_MAX = {
     static: { speed: 0, damage: 1, hp: 5 },
     slow:   { speed: 3, damage: 2, hp: 7 },
     fast:   { speed: 6, damage: 4, hp: 10 }
 };
-
-const MAX_ENEMIES = 5; // уменьшенный пул врагов
+const MAX_ENEMIES = 5; // уменьшили пул
 
 // =====================
 // GAME STATE
@@ -136,6 +132,7 @@ function getPlatformTypeByScore() {
     if (rand < normalChance + brokenChance + movingSlowChance) return 'moving_slow';
     return 'moving_fast';
 }
+
 function generateInitialPlatforms(count) {
     let currentY = 100;
     for (let i = 0; i < count; i++) {
@@ -168,15 +165,16 @@ function getEnemyTypeByScore(score) {
 }
 
 // =====================
-// SPAWN ENEMIES с X/Y смещением
+// SPAWN ENEMIES (оптимизированно)
+let lastEnemySpawn = 0;
 function spawnEnemies(score) {
+    const now = performance.now();
+    if (now - lastEnemySpawn < 300) return; // проверка каждые 300ms
+    lastEnemySpawn = now;
+
     const spawnChance = 0.002 + Math.min(score / 30000, 0.01);
 
     platforms.forEach(p => {
-        // Проверка, есть ли на платформе уже враг
-        const enemyOnPlatform = activeEnemies.find(e => e.y > p.y && e.y < p.y + PLATFORM_HEIGHT);
-        if (enemyOnPlatform) return;
-
         if (p.y > player.y && Math.random() < spawnChance) {
             const enemy = inactiveEnemies.find(e => !e.active);
             if (!enemy) return;
@@ -184,19 +182,22 @@ function spawnEnemies(score) {
             enemy.active = true;
             enemy.type = getEnemyTypeByScore(score);
 
-            // Случайный сдвиг по X/Y
-            const offsetX = Math.random() * 30 * (Math.random() < 0.5 ? -1 : 1); // ±30px
-            const offsetY = Math.random() * 20 * (Math.random() < 0.5 ? -1 : 1); // ±20px
+            const offsetX = Math.random() * 30 * (Math.random() < 0.5 ? -1 : 1);
+            const offsetY = Math.random() * 20 * (Math.random() < 0.5 ? -1 : 1);
 
             enemy.x = p.x + Math.random() * (PLATFORM_WIDTH - enemy.size) + offsetX;
             enemy.y = p.y + PLATFORM_HEIGHT + offsetY;
 
-            enemy.vx = 0;
+            // скорость подвижных врагов
+            if (enemy.type === 'slow') enemy.vx = (Math.random() < 0.5 ? 1 : -1) * (ENEMY_MAX['slow'].speed + score * 0.0001);
+            else if (enemy.type === 'fast') enemy.vx = (Math.random() < 0.5 ? 1 : -1) * (ENEMY_MAX['fast'].speed + score * 0.0002);
+            else enemy.vx = 0;
             enemy.vy = 0;
+
             enemy.hp = ENEMY_MAX[enemy.type].hp;
             enemy.maxHp = ENEMY_MAX[enemy.type].hp;
             enemy.damage = ENEMY_MAX[enemy.type].damage;
-            enemy.lastShot = performance.now();
+            enemy.lastShot = now;
             enemy.bullets = [];
 
             activeEnemies.push(enemy);
@@ -205,58 +206,45 @@ function spawnEnemies(score) {
 }
 
 // =====================
-// UPDATE ENEMIES с авто-стрельбой только на экране
+// UPDATE ENEMIES
 function updateEnemies(dt) {
     for (let i = activeEnemies.length - 1; i >= 0; i--) {
         const e = activeEnemies[i];
+
+        // проверка, на экране ли враг
+        if (e.y < player.y - canvas.height || e.y > player.y + canvas.height) continue;
+
         e.x += e.vx;
         e.y += e.vy;
 
-        if (e.y < -50 || e.y > player.y + canvas.height / 2) {
-            e.active = false;
-            activeEnemies.splice(i, 1);
-            inactiveEnemies.push(e);
-            continue;
+        // отражение от стен
+        if (e.vx !== 0) {
+            if (e.x < 0) e.vx = Math.abs(e.vx);
+            if (e.x + e.size > canvas.width) e.vx = -Math.abs(e.vx);
         }
 
-        // авто-стрельба только если враг на экране
-        if (e.y >= 0 && e.y <= canvas.height && performance.now() - e.lastShot > 2000) {
+        // авто-стрельба каждые 2 секунды
+        if (performance.now() - e.lastShot > 2000) {
             const dx = (player.x + PLAYER_SIZE/2) - (e.x + e.size/2);
             const dy = (player.y + PLAYER_SIZE/2) - (e.y + e.size/2);
             const dist = Math.sqrt(dx*dx + dy*dy);
-            const speed = 6; // можно менять
-            e.bullets.push({
-                x: e.x + e.size/2,
-                y: e.y + e.size/2,
-                vx: dx/dist*speed,
-                vy: dy/dist*speed,
-                size: 6
-            });
+            e.bullets.push({ x: e.x + e.size/2, y: e.y + e.size/2, vx: dx/dist*6, vy: dy/dist*6, size: 6 });
             e.lastShot = performance.now();
         }
 
-        // двигаем пули врагов
+        // движение пуль врагов
         for (let j = e.bullets.length - 1; j >= 0; j--) {
             const b = e.bullets[j];
             b.x += b.vx;
             b.y += b.vy;
 
-            if (player.x + PLAYER_SIZE > b.x && player.x < b.x + b.size &&
-                player.y + PLAYER_SIZE > b.y && player.y < b.y + b.size) {
-                player.hp -= e.damage;
-                e.bullets.splice(j, 1);
-                continue;
-            }
-
-            if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
-                e.bullets.splice(j, 1);
-            }
+            if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) e.bullets.splice(j, 1);
         }
     }
 }
 
 // =====================
-// UPDATE GAME с автоприцеливанием игрока
+// UPDATE GAME
 function update(dt) {
     const now = performance.now();
 
@@ -267,57 +255,30 @@ function update(dt) {
     player.vy += GRAVITY;
     player.y += player.vy;
 
-    // авто-стрельба игрока только по видимым врагам
-    if (activeEnemies.length > 0 && now - lastShotTime > FIRE_RATE) {
-        const visibleEnemies = activeEnemies.filter(e => e.y >= 0 && e.y <= canvas.height);
-        if (visibleEnemies.length > 0) {
-            // ближайший враг
-            let nearest = null;
-            let minDist = Infinity;
-            visibleEnemies.forEach(e => {
-                const dx = (e.x + e.size/2) - (player.x + PLAYER_SIZE/2);
-                const dy = (e.y + e.size/2) - player.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < minDist) {
-                    minDist = dist;
-                    nearest = e;
-                }
-            });
-
-            if (nearest) {
-                const dx = (nearest.x + nearest.size/2) - (player.x + PLAYER_SIZE/2);
-                const dy = (nearest.y + nearest.size/2) - player.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                bullets.push({
-                    x: player.x + PLAYER_SIZE/2,
-                    y: player.y,
-                    vx: dx/dist * BULLET_SPEED,
-                    vy: dy/dist * BULLET_SPEED,
-                    damage: BULLET_DAMAGE
-                });
-            }
-            lastShotTime = now;
-        }
+    // авто-выстрел игрока (по врагам на экране)
+    if (activeEnemies.some(e => e.y < player.y + canvas.height && e.y > player.y - canvas.height) && now - lastShotTime > FIRE_RATE) {
+        bullets.push({ x: player.x + PLAYER_SIZE/2, y: player.y, vy: BULLET_SPEED });
+        lastShotTime = now;
     }
 
     // движение пуль игрока
     for (let i = bullets.length - 1; i >= 0; i--) {
         const b = bullets[i];
-        b.x += b.vx;
         b.y += b.vy;
+        if (b.y > canvas.height + 100 || b.y < -100) bullets.splice(i, 1);
+    }
 
-        // удаляем пули за экраном
-        if (b.x < 0 || b.x > canvas.width || b.y < -100 || b.y > canvas.height + 100) {
-            bullets.splice(i, 1);
-            continue;
-        }
+    // обновляем врагов
+    updateEnemies(dt);
 
-        // проверка попаданий
+    // проверка попаданий игрока по врагам
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
         for (let j = activeEnemies.length - 1; j >= 0; j--) {
             const e = activeEnemies[j];
             if (b.x > e.x && b.x < e.x + e.width &&
                 b.y > e.y && b.y < e.y + e.height) {
-                e.hp -= b.damage;
+                e.hp -= 10;
                 bullets.splice(i, 1);
                 if (e.hp <= 0) {
                     e.active = false;
@@ -336,6 +297,7 @@ function update(dt) {
             return;
         }
 
+        // collision with player
         if (player.vy < 0 &&
             player.y <= p.y + PLATFORM_HEIGHT &&
             player.y >= p.y &&
@@ -361,6 +323,7 @@ function update(dt) {
             }
         }
 
+        // движение платформ
         if (p.type === 'moving_slow') {
             let speed = Math.min(3.5, 1 + score * 0.00005);
             p.vx = Math.sign(p.vx) * speed;
@@ -420,7 +383,7 @@ function draw() {
 
     // bullets
     ctx.fillStyle = '#ffff00';
-    bullets.forEach(b => ctx.fillRect(b.x - 2, canvas.height - b.y, 4, 4));
+    bullets.forEach(b => ctx.fillRect(b.x - BULLET_SIZE/2, canvas.height - b.y, BULLET_SIZE, BULLET_SIZE));
 
     // platforms
     platforms.forEach(p => {
