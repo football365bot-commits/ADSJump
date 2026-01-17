@@ -242,7 +242,7 @@ function updateEnemies(dt) {
                 damage: e.damage   // 👈 ВАЖНО
             });
 
-            e.lastShot = performance.now();
+                e.lastShot = performance.now();
         }
     
 
@@ -275,6 +275,7 @@ function updateEnemies(dt) {
         }
     }
 }
+
 // =====================
 // UPDATE GAME
 function update(dt) {
