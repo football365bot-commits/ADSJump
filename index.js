@@ -10,6 +10,7 @@ window.addEventListener('resize', resize);
 
 // =====================
 // CONFIG
+// =====================
 const GRAVITY = -0.6;
 const BASE_JUMP_FORCE = 15;
 const PLAYER_SIZE = 40;
@@ -18,31 +19,30 @@ const PLATFORM_HEIGHT = 15;
 const MIN_GAP = 120;
 const MAX_GAP = 160;
 const CAMERA_SPEED = 1.25;
-const BULLET_SPEED = 12;
-const BULLET_SIZE = 4;
-const FIRE_RATE = 150;
+
+const BULLET_SPEED = 12; // скорость пуль игрока
+const BULLET_DAMAGE = 10; // урон пуль игрока
+const FIRE_RATE = 150;    // задержка между выстрелами игрока
+
 const ENEMY_RESPAWN_OFFSET = 300;
 
 const ENEMY_MAX = {
     static: { speed: 0, damage: 1, hp: 5 },
-    slow: { speed: 3, damage: 2, hp: 7 },
-    fast: { speed: 6, damage: 4, hp: 10 }
+    slow:   { speed: 3, damage: 2, hp: 7 },
+    fast:   { speed: 6, damage: 4, hp: 10 }
 };
 
-// Линейная прогрессия для спавна врагов
-const BASE_SPAWN_CHANCE = 0.01;
-const MAX_SPAWN_CHANCE = 0.1;
-const SCORE_FOR_MAX = 20000;
-
-const MAX_ENEMIES = 5; // уменьшили пул
+const MAX_ENEMIES = 5; // уменьшенный пул врагов
 
 // =====================
 // GAME STATE
+// =====================
 let lastTime = 0;
 let score = 0;
 
 // =====================
 // PLAYER
+// =====================
 const player = {
     x: canvas.width / 2,
     y: canvas.height / 3,
@@ -53,6 +53,7 @@ const player = {
 
 // =====================
 // BULLETS
+// =====================
 const bullets = [];
 let lastShotTime = 0;
 
@@ -69,11 +70,13 @@ const inactiveEnemies = Array.from({ length: MAX_ENEMIES }, () => ({
 
 // =====================
 // PLAYER SKIN
+// =====================
 const playerImage = new Image();
 playerImage.src = 'compressed_photo_2026-01-16_10-11-34.png';
 
 // =====================
 // INPUT
+// =====================
 let inputX = 0;
 canvas.addEventListener('touchstart', e => {
     e.preventDefault();
@@ -84,6 +87,7 @@ canvas.addEventListener('touchend', e => { e.preventDefault(); inputX = 0; });
 
 // =====================
 // PLATFORMS
+// =====================
 const platforms = [];
 
 // =====================
@@ -113,8 +117,7 @@ function createStartPlatform() {
         item: null,
         temp: true,
         lifeTime: 2000,
-        spawnTime: performance.now(),
-        hasEnemy: false
+        spawnTime: performance.now()
     });
 }
 createStartPlatform();
@@ -148,8 +151,7 @@ function generateInitialPlatforms(count) {
             type: type,
             vx: vx,
             used: false,
-            item: itemType,
-            hasEnemy: false
+            item: itemType
         });
         currentY += gap;
     }
@@ -166,12 +168,16 @@ function getEnemyTypeByScore(score) {
 }
 
 // =====================
-// SPAWN ENEMIES с линейной прогрессией и X/Y смещением
+// SPAWN ENEMIES с X/Y смещением
 function spawnEnemies(score) {
-    const spawnChance = Math.min(BASE_SPAWN_CHANCE + (score / SCORE_FOR_MAX) * (MAX_SPAWN_CHANCE - BASE_SPAWN_CHANCE), MAX_SPAWN_CHANCE);
+    const spawnChance = 0.002 + Math.min(score / 30000, 0.01);
 
     platforms.forEach(p => {
-        if (!p.hasEnemy && p.y > player.y + ENEMY_RESPAWN_OFFSET && Math.random() < spawnChance) {
+        // Проверка, есть ли на платформе уже враг
+        const enemyOnPlatform = activeEnemies.find(e => e.y > p.y && e.y < p.y + PLATFORM_HEIGHT);
+        if (enemyOnPlatform) return;
+
+        if (p.y > player.y && Math.random() < spawnChance) {
             const enemy = inactiveEnemies.find(e => !e.active);
             if (!enemy) return;
 
@@ -194,20 +200,18 @@ function spawnEnemies(score) {
             enemy.bullets = [];
 
             activeEnemies.push(enemy);
-            p.hasEnemy = true; // ограничение одного врага на платформе
         }
     });
 }
 
 // =====================
-// UPDATE ENEMIES
+// UPDATE ENEMIES с авто-стрельбой только на экране
 function updateEnemies(dt) {
     for (let i = activeEnemies.length - 1; i >= 0; i--) {
         const e = activeEnemies[i];
         e.x += e.vx;
         e.y += e.vy;
 
-        // удаление врагов за экран
         if (e.y < -50 || e.y > player.y + canvas.height / 2) {
             e.active = false;
             activeEnemies.splice(i, 1);
@@ -215,17 +219,23 @@ function updateEnemies(dt) {
             continue;
         }
 
-        // авто-стрельба раз в 2 секунды
-        if (performance.now() - e.lastShot > 2000) {
+        // авто-стрельба только если враг на экране
+        if (e.y >= 0 && e.y <= canvas.height && performance.now() - e.lastShot > 2000) {
             const dx = (player.x + PLAYER_SIZE/2) - (e.x + e.size/2);
             const dy = (player.y + PLAYER_SIZE/2) - (e.y + e.size/2);
             const dist = Math.sqrt(dx*dx + dy*dy);
-            const speed = 6;
-            e.bullets.push({ x: e.x + e.size/2, y: e.y + e.size/2, vx: dx/dist*speed, vy: dy/dist*speed, size: 6 });
+            const speed = 6; // можно менять
+            e.bullets.push({
+                x: e.x + e.size/2,
+                y: e.y + e.size/2,
+                vx: dx/dist*speed,
+                vy: dy/dist*speed,
+                size: 6
+            });
             e.lastShot = performance.now();
         }
 
-        // движение пуль врагов
+        // двигаем пули врагов
         for (let j = e.bullets.length - 1; j >= 0; j--) {
             const b = e.bullets[j];
             b.x += b.vx;
@@ -246,7 +256,7 @@ function updateEnemies(dt) {
 }
 
 // =====================
-// UPDATE GAME
+// UPDATE GAME с автоприцеливанием игрока
 function update(dt) {
     const now = performance.now();
 
@@ -257,50 +267,75 @@ function update(dt) {
     player.vy += GRAVITY;
     player.y += player.vy;
 
-    // авто-выстрел игрока
+    // авто-стрельба игрока только по видимым врагам
     if (activeEnemies.length > 0 && now - lastShotTime > FIRE_RATE) {
-        bullets.push({ x: player.x + PLAYER_SIZE/2, y: player.y, vy: BULLET_SPEED });
-        lastShotTime = now;
+        const visibleEnemies = activeEnemies.filter(e => e.y >= 0 && e.y <= canvas.height);
+        if (visibleEnemies.length > 0) {
+            // ближайший враг
+            let nearest = null;
+            let minDist = Infinity;
+            visibleEnemies.forEach(e => {
+                const dx = (e.x + e.size/2) - (player.x + PLAYER_SIZE/2);
+                const dy = (e.y + e.size/2) - player.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = e;
+                }
+            });
+
+            if (nearest) {
+                const dx = (nearest.x + nearest.size/2) - (player.x + PLAYER_SIZE/2);
+                const dy = (nearest.y + nearest.size/2) - player.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                bullets.push({
+                    x: player.x + PLAYER_SIZE/2,
+                    y: player.y,
+                    vx: dx/dist * BULLET_SPEED,
+                    vy: dy/dist * BULLET_SPEED,
+                    damage: BULLET_DAMAGE
+                });
+            }
+            lastShotTime = now;
+        }
     }
 
     // движение пуль игрока
     for (let i = bullets.length - 1; i >= 0; i--) {
         const b = bullets[i];
+        b.x += b.vx;
         b.y += b.vy;
-        if (b.y > canvas.height + 100 || b.y < -100) bullets.splice(i, 1);
-    }
 
-    // обновляем врагов
-    updateEnemies(dt);
+        // удаляем пули за экраном
+        if (b.x < 0 || b.x > canvas.width || b.y < -100 || b.y > canvas.height + 100) {
+            bullets.splice(i, 1);
+            continue;
+        }
 
-    // проверка попаданий игрока по врагам
-    for (let i = bullets.length - 1; i >= 0; i--) {
-        const b = bullets[i];
+        // проверка попаданий
         for (let j = activeEnemies.length - 1; j >= 0; j--) {
             const e = activeEnemies[j];
             if (b.x > e.x && b.x < e.x + e.width &&
                 b.y > e.y && b.y < e.y + e.height) {
-                e.hp -= 10;
+                e.hp -= b.damage;
                 bullets.splice(i, 1);
                 if (e.hp <= 0) {
                     e.active = false;
                     activeEnemies.splice(j, 1);
                     inactiveEnemies.push(e);
-                    e.platform && (e.platform.hasEnemy = false); // сброс флага платформы
                 }
                 break;
             }
         }
     }
 
-    // движение платформ
+    // платформы
     platforms.forEach((p, index) => {
         if (p.temp && now - p.spawnTime > p.lifeTime) {
             platforms.splice(index, 1);
             return;
         }
 
-        // collision with player
         if (player.vy < 0 &&
             player.y <= p.y + PLATFORM_HEIGHT &&
             player.y >= p.y &&
@@ -326,7 +361,6 @@ function update(dt) {
             }
         }
 
-        // движение платформ
         if (p.type === 'moving_slow') {
             let speed = Math.min(3.5, 1 + score * 0.00005);
             p.vx = Math.sign(p.vx) * speed;
@@ -362,7 +396,7 @@ function update(dt) {
             if (type === 'moving_slow') vx = Math.random() < 0.5 ? 1 : -1;
             if (type === 'moving_fast') vx = Math.random() < 0.5 ? 3 : -3;
             const itemType = getItemForPlatform();
-            platforms[i] = { x: Math.random()*(canvas.width-PLATFORM_WIDTH), y:maxY+gap, type, vx, used:false, item:itemType, hasEnemy:false };
+            platforms[i] = { x: Math.random()*(canvas.width-PLATFORM_WIDTH), y:maxY+gap, type, vx, used:false, item:itemType };
             maxY = platforms[i].y;
         }
     });
@@ -386,7 +420,7 @@ function draw() {
 
     // bullets
     ctx.fillStyle = '#ffff00';
-    bullets.forEach(b => ctx.fillRect(b.x - BULLET_SIZE/2, canvas.height - b.y, BULLET_SIZE, BULLET_SIZE));
+    bullets.forEach(b => ctx.fillRect(b.x - 2, canvas.height - b.y, 4, 4));
 
     // platforms
     platforms.forEach(p => {
