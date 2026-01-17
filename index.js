@@ -28,8 +28,6 @@ const ENEMY_FIRE_MIN_INTERVAL = 150;
 
 
 
-let lastEnemySpawn = 0;
-const ENEMY_SPAWN_INTERVAL = 800;
 // =====================
 // GAME STATE
 // =====================
@@ -213,17 +211,8 @@ function update(dt) {
 
     // === AUTO SHOOT ===
     
-    
-    const cameraBottom = player.y - canvas.height / 2;
-    const cameraTop = player.y + canvas.height / 2;
-
-    const hasEnemyOnScreen = enemies.some(e =>
-        e.active &&
-        e.y > cameraBottom &&
-        e.y < cameraTop
-    );
-
-    if (hasEnemyOnScreen && now - lastShotTime > FIRE_RATE) {
+    const activeEnemies = enemies.filter(e => e.active);
+    if (activeEnemies.length > 0 && now - lastShotTime > FIRE_RATE) {
         bullets.push({
             x: player.x + PLAYER_SIZE / 2,
             y: player.y,
@@ -234,14 +223,7 @@ function update(dt) {
     // === BULLETS UPDATE ===
     for (let i = bullets.length - 1; i >= 0; i--) {
         bullets[i].y += bullets[i].vy;
-        const cameraBottom = player.y - canvas.height / 2;
-        const cameraTop = player.y + canvas.height / 2;
-
-        if (
-        bullets[i].y < cameraBottom - 100 ||
-        bullets[i].y > cameraTop + 100
-        ) {
-        bullets.splice(i, 1);
+        if (bullets[i].y > canvas.height + 100 || bullets[i].y < -100) bullets.splice(i, 1);
     }
 
     // === ENEMIES UPDATE ===
@@ -252,11 +234,8 @@ function update(dt) {
         enemy.x += enemy.vx;
         enemy.y += enemy.vy;
 
-        const cameraBottom = player.y - canvas.height / 2;
-
-        if (enemy.hp <= 0 || enemy.y < cameraBottom - 100) {
+        if (enemy.hp <= 0 || enemy.y > canvas.height + 50) {
             enemy.active = false;
-            enemy.bullets = [];
             return;
         }
 
@@ -393,40 +372,38 @@ function update(dt) {
     });
 
     // === SPAWN NEW ENEMIES ===
-    const cameraTop = player.y + canvas.height / 2;
+     if (score >= 4500) { // старт спавна после 1500 очков
+        let maxEnemyY = enemies.length > 0 
+            ? Math.max(...enemies.map(e => e.y))
+            : Math.max(...platforms.map(p => p.y)) + ENEMY_RESPAWN_OFFSET;
 
-    if (score >= 4500 && now - lastEnemySpawn > ENEMY_SPAWN_INTERVAL) {
-        lastEnemySpawn = now;
-        
-        const spawnCount = getEnemySpawnCount(score)
+        const spawnCount = getEnemySpawnCount(score);
 
         for (let j = 0; j < spawnCount; j++) {
-            const enemy = enemies.find(e => !e.active);
-            if (!enemy) break;
-
             const type = getEnemyTypeByScore(score);
-
             let vx = 0;
             if (type === 'slow') vx = Math.random() < 0.5 ? ENEMY_MAX.slow.speed : -ENEMY_MAX.slow.speed;
             if (type === 'fast') vx = Math.random() < 0.5 ? ENEMY_MAX.fast.speed : -ENEMY_MAX.fast.speed;
 
-            enemy.active = true;
-            enemy.type = type;
-            enemy.x = Math.random() * (canvas.width - enemy.size);
-
-        
-            enemy.y = cameraTop + 80 + j * 50;
-
-            enemy.vx = vx;
-            enemy.vy = 0;
-            enemy.hp = ENEMY_MAX[type].hp;
-            enemy.maxHp = enemy.hp;
-            enemy.damage = ENEMY_MAX[type].damage;
-            enemy.lastShot = now;
-            enemy.bullets = [];
+            const enemy = enemies.find(e => !e.active);
+            if (enemy) {
+                enemy.active = true;
+                enemy.type = type;
+                enemy.x = Math.random() * (canvas.width - 30);
+                enemy.y = maxEnemyY + j * 40 + ENEMY_RESPAWN_OFFSET;
+                enemy.vx = vx;
+                enemy.vy = 0;
+                enemy.size = 30;
+                enemy.width = 30;
+                enemy.height = 30;
+                enemy.hp = ENEMY_MAX[type].hp;
+                enemy.maxHp = ENEMY_MAX[type].hp;
+                enemy.damage = ENEMY_MAX[type].damage;
+                enemy.lastShot = performance.now();
+                enemy.bullets = [];
+            }
         }
     }
-    
        
 
     // === ПРОВЕРКА GAME OVER ===
