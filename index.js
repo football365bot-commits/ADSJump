@@ -339,14 +339,16 @@ function update(dt) {
     });
 
     // камера
-    // камера с линейным ускорением по score
-    if (player.y > canvas.height / 2) {
-    // вычисляем текущую скорость камеры
+     // камера с линейным ускорением по score (исправлено)
+    const cameraTargetY = canvas.height / 2;
+    if (player.y > cameraTargetY) {
         let cameraSpeed = CAMERA_SPEED_MIN + score * 0.0001; // линейно растёт с очками
         cameraSpeed = Math.min(cameraSpeed, CAMERA_SPEED_MAX); // ограничение сверху
 
-        const delta = (player.y - canvas.height / 2) * cameraSpeed;
-        player.y = canvas.height / 2;
+        let delta = player.y - cameraTargetY;
+        delta = Math.min(delta, cameraSpeed * 10); // ограничиваем максимальное смещение за кадр
+
+        player.y -= delta; // плавное движение игрока вверх
         platforms.forEach(p => p.y -= delta);
         activeEnemies.forEach(e => e.y -= delta);
         score += Math.floor(delta);
