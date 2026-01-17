@@ -212,11 +212,7 @@ function updateEnemies(dt) {
         const e = activeEnemies[i];
 
         // проверка, на экране ли враг
-        const onScreen =
-            e.y > player.y - canvas.height / 2 &&
-            e.y < player.y + canvas.height / 2;
-
-        if (!onScreen) continue;
+        if (e.y < player.y - canvas.height || e.y > player.y + canvas.height) continue;
 
         e.x += e.vx;
         e.y += e.vy;
@@ -228,23 +224,13 @@ function updateEnemies(dt) {
         }
 
         // авто-стрельба каждые 2 секунды
-        if (onScreen && performance.now() - e.lastShot > 2000) {
+        if (performance.now() - e.lastShot > 2000) {
             const dx = (player.x + PLAYER_SIZE/2) - (e.x + e.size/2);
             const dy = (player.y + PLAYER_SIZE/2) - (e.y + e.size/2);
-            const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-
-            e.bullets.push({
-                x: e.x + e.size/2,
-                y: e.y + e.size/2,
-                vx: dx / dist * 6,
-                vy: dy / dist * 6,
-                size: 6,
-                damage: e.damage   // 👈 ВАЖНО
-            });
-
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            e.bullets.push({ x: e.x + e.size/2, y: e.y + e.size/2, vx: dx/dist*6, vy: dy/dist*6, size: 6 });
             e.lastShot = performance.now();
         }
-    
 
         // движение пуль врагов
         for (let j = e.bullets.length - 1; j >= 0; j--) {
@@ -252,28 +238,9 @@ function updateEnemies(dt) {
             b.x += b.vx;
             b.y += b.vy;
 
-            // попадание в игрока
-            if (
-                b.x > player.x &&
-                b.x < player.x + PLAYER_SIZE &&
-                b.y > player.y &&
-                b.y < player.y + PLAYER_SIZE
-            ) {
-                player.hp -= b.damage;   // 👈 урон по типу врага
-                e.bullets.splice(j, 1);  // 👈 пуля исчезает
-                continue;
-            }
-
-            // выход за экран
-            if (
-                b.x < 0 || b.x > canvas.width ||
-                b.y < player.y - canvas.height / 2 ||
-                b.y > player.y + canvas.height / 2
-            ) {
-                e.bullets.splice(j, 1);
-            }
+            if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) e.bullets.splice(j, 1);
         }
-    
+    }
 }
 
 // =====================
