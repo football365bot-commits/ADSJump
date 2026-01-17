@@ -1,5 +1,4 @@
-<canvas id="game"></canvas>
-<script>
+
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
