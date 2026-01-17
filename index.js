@@ -165,7 +165,8 @@ function getEnemyTypeByScore(score) {
 }
 
 // =====================
-// SPAWN ENEMIES (Doodle Jump style)
+// =====================
+// SPAWN ENEMIES (Doodle Jump style) с X/Y смещением
 function spawnEnemies(score, canvasHeight) {
     const spawnChance = 0.02 + Math.min(score / 20000, 0.05);
 
@@ -176,8 +177,14 @@ function spawnEnemies(score, canvasHeight) {
 
             enemy.active = true;
             enemy.type = getEnemyTypeByScore(score);
-            enemy.x = p.x + Math.random() * (PLATFORM_WIDTH - enemy.size);
-            enemy.y = p.y + PLATFORM_HEIGHT;
+
+            // Случайный сдвиг по X/Y
+            const offsetX = Math.random() * 30 * (Math.random() < 0.5 ? -1 : 1); // ±30px
+            const offsetY = Math.random() * 20 * (Math.random() < 0.5 ? -1 : 1); // ±20px
+
+            enemy.x = p.x + Math.random() * (PLATFORM_WIDTH - enemy.size) + offsetX;
+            enemy.y = p.y + PLATFORM_HEIGHT + offsetY;
+
             enemy.vx = 0;
             enemy.vy = 0;
             enemy.hp = ENEMY_MAX[enemy.type].hp;
