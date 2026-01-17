@@ -273,9 +273,8 @@ function updateEnemies(dt) {
                 e.bullets.splice(j, 1);
             }
         }
-    
+    }
 }
-
 // =====================
 // UPDATE GAME
 function update(dt) {
