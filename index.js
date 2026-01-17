@@ -439,4 +439,17 @@ function draw() {
     // HUD
     ctx.fillStyle = '#fff';
     ctx.font='20px Arial';
-    ctx.fillText(`Score: ${score}`, 20,
+    ctx.fillText(`Score: ${score}`, 20, 30);
+    ctx.fillText(`HP: ${player.hp}`, canvas.width - 100, 30);
+}
+
+// =====================
+// GAME LOOP
+function gameLoop(t){
+    const dt = t - lastTime;
+    lastTime = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);
