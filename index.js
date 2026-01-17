@@ -19,6 +19,7 @@ const PLATFORM_HEIGHT = 15;
 const MIN_GAP = 120;
 const MAX_GAP = 160;
 const CAMERA_SPEED = 1.25;
+const CAMERA_SPEED_MAX = 4;      // максимальная скорость камеры
 const BULLET_SPEED = 12;
 const BULLET_SIZE = 4;
 const FIRE_RATE = 150;
@@ -338,8 +339,13 @@ function update(dt) {
     });
 
     // камера
+    // камера с линейным ускорением по score
     if (player.y > canvas.height / 2) {
-        const delta = (player.y - canvas.height / 2) * CAMERA_SPEED;
+    // вычисляем текущую скорость камеры
+        let cameraSpeed = CAMERA_SPEED_MIN + score * 0.0001; // линейно растёт с очками
+        cameraSpeed = Math.min(cameraSpeed, CAMERA_SPEED_MAX); // ограничение сверху
+
+        const delta = (player.y - canvas.height / 2) * cameraSpeed;
         player.y = canvas.height / 2;
         platforms.forEach(p => p.y -= delta);
         activeEnemies.forEach(e => e.y -= delta);
