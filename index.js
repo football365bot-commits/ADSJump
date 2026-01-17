@@ -168,7 +168,7 @@ function getEnemyTypeByScore(score) {
 // =====================
 // SPAWN ENEMIES (Doodle Jump style) с X/Y смещением
 function spawnEnemies(score, canvasHeight) {
-    const spawnChance = 0.02 + Math.min(score / 20000, 0.05);
+    const spawnChance = 0.002 + Math.min(score / 30000, 0.05);
 
     platforms.forEach(p => {
         if (p.y > player.y && Math.random() < spawnChance) {
